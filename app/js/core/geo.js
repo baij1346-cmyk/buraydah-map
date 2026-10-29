@@ -5,6 +5,13 @@ export const G = { ready: false, N: 0, ZS: [], SUBS: [], LA: [26.22, 26.47], LO:
 let NUMS, LAT, LNG, SUBMAP, AUTO;
 
 export async function loadGeo(base = './data/') {
+  /* نسخة الملف الواحد: البيانات مضمّنة في الصفحة */
+  const em = document.getElementById('meta-data');
+  if (em) {
+    const raw = atob(document.getElementById('meters-data').textContent.trim()), u = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i);
+    return initGeo(JSON.parse(em.textContent), u.buffer);
+  }
   const [meta, buf] = await Promise.all([
     fetch(base + 'meta.json').then(r => r.json()),
     fetch(base + 'meters.bin').then(r => r.arrayBuffer())]);

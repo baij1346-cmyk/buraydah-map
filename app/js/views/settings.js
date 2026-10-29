@@ -2,6 +2,7 @@
 import * as repo from '../store/repo.js';
 import { S, saveSettings } from '../store/repo.js';
 import { G, parseTr, trLabel } from '../core/geo.js';
+import { ROOT } from '../core/ui.js';
 import { COLORS, DIR } from '../core/const.js';
 import { demoSnapshots } from '../core/demo.js';
 import { esc, toast, download, fmtDateTime, isoDay, now, armed, arDigits } from '../core/util.js';
@@ -30,7 +31,7 @@ function render() {
     '<button class="tbtn primary" id="seBak">حفظ نسخة احتياطية</button><label class="tbtn" for="seRes">استرجاع نسخة<input type="file" id="seRes" accept=".json" hidden></label>' +
     '<button class="tbtn" id="seDemo">تحميل بيانات تجريبية</button><button class="tbtn danger" id="seWipe">مسح كل البيانات</button></div>' +
     '<p class="hint">⚠️ رابط المنصة عام، وملفات أرقام العدادات ومواقعها منشورة معه. قبل ما توزّع الرابط على أحد، نحتاج نضيف تسجيل دخول (المرحلة الثانية).</p></div>';
-  h += '<p class="hint" style="text-align:center">الإصدار ٢ · <a href="../board.html">اللوحة القديمة</a> · <a href="../map.html">خريطة المقاولين</a></p>';
+  h += '<p class="hint" style="text-align:center">الإصدار ٢ · <a href="' + ROOT + 'board.html">اللوحة القديمة</a> · <a href="' + ROOT + 'map.html">خريطة المقاولين</a></p>';
   root.querySelector('#seBody').innerHTML = h;
   const $ = s => root.querySelector(s);
   root.querySelectorAll('[data-zco]').forEach(i => i.onchange = () => { p.zones[+i.dataset.zco].co = i.value.trim(); saveSettings(); });

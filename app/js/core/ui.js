@@ -6,6 +6,8 @@ import { S, updateTicket, updateReport, setReportStatus } from '../store/repo.js
 
 /* سياق مشترك بين الأقسام (يعبّيه main.js): ctx.go(v) ينقل للقسم فورًا */
 export const ctx = {};
+/* مسار جذر الموقع: من app/ نرجع خطوة، ومن نسخة الملف الواحد (في الجذر) لا */
+export const ROOT = /\/app\/[^/]*$/.test(location.pathname) ? '../' : '';
 
 /* ---------- النافذة ---------- */
 const modal = () => document.getElementById('modal'), sheet = () => document.getElementById('sheet');
