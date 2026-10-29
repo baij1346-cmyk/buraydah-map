@@ -38,6 +38,7 @@ function show(v) {
   VIEWS[v].render();
   document.title = el.dataset.title + ' — كهرباء بريدة';
 }
+window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
 window.addEventListener('hashchange', () => show(location.hash.slice(1)));
 
 /* ---------- الشريط العلوي ---------- */

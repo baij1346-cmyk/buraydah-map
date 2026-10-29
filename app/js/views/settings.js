@@ -5,6 +5,7 @@ import { G, parseTr, trLabel } from '../core/geo.js';
 import { ROOT } from '../core/ui.js';
 import { COLORS, DIR } from '../core/const.js';
 import { demoSnapshots } from '../core/demo.js';
+import { DEF_TARGETS } from '../analysis/exec.js';
 import { esc, toast, download, fmtDateTime, isoDay, now, armed, arDigits } from '../core/util.js';
 
 let root;
@@ -22,6 +23,10 @@ function render() {
     '<textarea class="cobox" id="seCo" aria-label="كلمات المقاولين">' + esc(p.co.map(([k, l]) => k === l ? k : k + ' = ' + l).join('\n')) + '</textarea></div>';
   h += '<p class="sec-title">مواقع المحولات <small>' + nTr + ' محفوظ</small></p><div class="card"><p class="hint">ارفع ملف CSV من GIS فيه ثلاث أعمدة: رقم المحول (مثل 4100-QBS-066128)، خط العرض، خط الطول. بعدها كل بلاغ يطلع على الخريطة ويدخل في الحصر بدقة. بدونه المنصة تستخدم موقع تقريبي من 511 (يطابق تقريبًا نص محولات بريدة).</p>' +
     '<div class="tools"><label class="tbtn primary" for="seTr">رفع قائمة المحولات (CSV)<input type="file" id="seTr" accept=".csv,.txt" hidden></label><button class="tbtn" id="seTrExp">تصدير المواقع المحفوظة</button></div></div>';
+  const TG = Object.assign({ ...DEF_TARGETS }, p.targets || {});
+  h += '<p class="sec-title">أهداف الأداء <small>تُستخدم في التقرير التنفيذي (أخضر / برتقالي / أحمر)</small></p><div class="card">' +
+    [['w60', 'نسبة الإغلاق خلال ساعة (%)'], ['w120', 'نسبة الإغلاق خلال ساعتين (%)'], ['w180', 'نسبة الإغلاق خلال 3 ساعات (%)'], ['avg', 'أقصى متوسط لمدة الإغلاق (دقيقة)'], ['over180', 'أقصى عدد بلاغات تتجاوز 3 ساعات']]
+      .map(([k, t]) => '<div class="prow"><label for="tg_' + k + '">' + t + '</label><input id="tg_' + k + '" class="inp sm" type="number" min="0" data-tg="' + k + '" value="' + TG[k] + '"></div>').join('') + '</div>';
   h += '<p class="sec-title">عام</p><div class="card">' +
     '<label class="chk"><input type="checkbox" id="seOnly"' + (p.onlyBuraydah ? ' checked' : '') + '> <span>غرفة العمليات: اعرض بلاغات مركز بريدة فقط</span></label>' + '</div>';
   h += '<p class="sec-title">تقارير الكهرباء المرفوعة <small>' + snaps.length + ' تقرير</small></p><div class="card">' +
@@ -37,6 +42,7 @@ function render() {
   root.querySelectorAll('[data-zco]').forEach(i => i.onchange = () => { p.zones[+i.dataset.zco].co = i.value.trim(); saveSettings(); });
   root.querySelectorAll('[data-zwa]').forEach(i => i.onchange = () => { p.zones[+i.dataset.zwa].wa = arDigits(i.value).replace(/\D/g, '').replace(/^0+/, '').replace(/^5/, '9665'); i.value = p.zones[+i.dataset.zwa].wa; saveSettings(); });
   $('#seCo').onchange = e => { p.co = e.target.value.split('\n').map(s => s.trim()).filter(Boolean).map(s => { const [k, l] = s.split('=').map(x => x.trim()); return [k, l || k]; }); saveSettings(); toast('تم الحفظ'); };
+  root.querySelectorAll('[data-tg]').forEach(i => i.onchange = () => { const v = parseFloat(i.value); if (v >= 0) { p.targets = Object.assign({ ...DEF_TARGETS }, p.targets || {}, { [i.dataset.tg]: v }); saveSettings(); } });
   $('#seOnly').onchange = e => { p.onlyBuraydah = e.target.checked; saveSettings(); };
   $('#seTr').onchange = async e => {
     const f = e.target.files[0]; if (!f) return; e.target.value = '';

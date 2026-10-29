@@ -6,6 +6,8 @@ import { CENTERS, escalation } from '../core/const.js';
 import { trLabel } from '../core/geo.js';
 import { esc, fmtDur, fmtTime, isoDay, DAY, HOUR, pct, groupBy, copy } from '../core/util.js';
 import { waLink } from '../core/ui.js';
+import { hbar, stack100, hours } from '../core/charts.js';
+import { DEF_TARGETS, scorecard, contractorBoard, keyMessages, recommendations, RAG_LABEL, PRIO } from '../analysis/exec.js';
 
 let root, day = '', center = 'بريدة';
 
@@ -44,49 +46,60 @@ function render() {
   if (!D.includes(day)) day = D[0];
   const A = analyzeDay(day), F = A.F, FC = F.filter(f => f.center === center);
   const dlabel = new Date(A.t0).toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long' });
-  let h = '<div class="row">' + (D.length > 1 ? '<div class="seg">' + D.slice(0, 7).map(x => '<button data-d="' + x + '" aria-pressed="' + (x === day) + '">' + x.slice(5) + '</button>').join('') + '</div>' : '') +
-    '<span class="spacer"></span><a class="tbtn primary" id="brWa" target="_blank" rel="noopener">أرسل الملخص واتساب</a><button class="tbtn" id="brCopy">نسخ</button></div>';
-  h += '<div class="card brief-head"><div><h3>تقرير ' + dlabel + '</h3><p class="hint">' + A.snaps.length + ' تقرير كهرباء · من ' + fmtTime(A.t0) + ' إلى ' + fmtTime(A.t1) + (A.snaps.some(s => /29 أكتوبر/.test(s.file)) ? ' · نسخة منشورة بدون أسماء' : '') + '</p></div></div>';
-  /* الأرقام الكبيرة */
-  const a = A.all;
-  h += '<div class="kgrid big"><div><b>' + a.n + '</b><span>بلاغ</span></div><div><b>' + a.closed + '</b><span>انحل</span></div><div class="' + (a.open ? 'w' : '') + '"><b>' + a.open + '</b><span>مفتوح وقت آخر تقرير</span></div><div><b>' + fmtDur(a.avg) + '</b><span>متوسط الإغلاق</span></div><div><b>' + a.within[0] + '%</b><span>انقفل خلال ساعة</span></div><div class="' + (a.over ? 'r' : '') + '"><b>' + a.over + '</b><span>تجاوز ساعتين</span></div></div>';
-  /* أبرز النقاط */
-  const pts = insights(A, center);
-  if (pts.length) h += '<p class="sec-title">أبرز النقاط</p><div class="card"><ul class="insights">' + pts.map(p => '<li class="' + (p.lv || '') + '">' + p.t + '</li>').join('') + '</ul></div>';
+  const T = Object.assign({ ...DEF_TARGETS }, S.settings.targets || {}), a = A.all;
+  const noCause = F.filter(f => !f.open && !f.cause).length, located = pct(F.filter(f => f.lat != null).length, F.length);
+  let h = '<div class="row no-print">' + (D.length > 1 ? '<div class="seg">' + D.slice(0, 7).map(x => '<button data-d="' + x + '" aria-pressed="' + (x === day) + '">' + x.slice(5) + '</button>').join('') + '</div>' : '') +
+    '<span class="spacer"></span><button class="tbtn primary" id="brPrint"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>التقرير التنفيذي (PDF)</button><a class="tbtn" id="brWa" target="_blank" rel="noopener">واتساب</a><button class="tbtn" id="brCopy">نسخ</button></div>';
+  /* الغلاف */
+  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>قسم الصيانة والطوارئ — الجهد المتوسط والمنخفض · القصيم</small><h2>تقرير أداء معالجة الأعطال</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
+  /* الخلاصة التنفيذية */
+  h += '<section class="rep-sec"><h3 class="rep-h"><span>1</span>الخلاصة التنفيذية</h3><ol class="msgs">' + keyMessages(A, center, T).map(m => '<li>' + m + '</li>').join('') + '</ol></section>';
+  /* مؤشرات الأداء مقابل الأهداف */
+  const SC = scorecard(F, T), ICON = { g: '✓', a: '!', r: '✕', n: '' };
+  h += '<section class="rep-sec"><h3 class="rep-h"><span>2</span>مؤشرات الأداء مقابل الأهداف <small>القصيم</small></h3><div class="kpis-x">' + SC.map(k =>
+    '<div class="kx ' + k.s + '"><span class="kx-t">' + k.t + '</span><b>' + (k.v == null ? '—' : k.unit === 'د' ? fmtDur(k.v) : k.v + k.unit) + '</b><span class="kx-g">الهدف ' + (k.unit === 'د' ? '≤ ' + k.target + ' د' : (k.k === 'over180' ? k.target : k.target + k.unit)) + '</span><span class="rag ' + k.s + '"><i>' + ICON[k.s] + '</i>' + RAG_LABEL[k.s] + '</span></div>').join('') + '</div>' +
+    '<div class="vol"><span><b>' + a.n + '</b> بلاغ</span><span><b>' + a.closed + '</b> انحل</span><span><b>' + a.open + '</b> مفتوح وقت آخر تقرير</span><span><b>' + a.over + '</b> تجاوز ساعتين</span></div></section>';
   /* المراكز */
-  const best = Math.min(...A.centers.filter(x => x.r.closed >= 5).map(x => x.r.avg)), worst = Math.max(...A.centers.filter(x => x.r.closed >= 5).map(x => x.r.avg));
-  h += '<p class="sec-title">المراكز</p><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المركز</th><th class="n">البلاغات</th><th class="n">انحل</th><th class="n">مفتوح</th><th class="n">متوسط الإغلاق</th><th class="n">خلال ساعة</th><th class="n">تجاوز ساعتين</th></tr></thead><tbody>' +
-    A.centers.map(x => '<tr><td><b>' + x.c + '</b></td><td class="n">' + x.r.n + '</td><td class="n">' + x.r.closed + '</td><td class="n">' + (x.r.open || '—') + '</td><td class="n" style="' + (x.r.avg === worst && A.centers.length > 1 ? 'color:var(--bad);font-weight:700' : x.r.avg === best ? 'color:var(--ok);font-weight:700' : '') + '">' + fmtDur(x.r.avg) + '</td><td class="n">' + x.r.within[0] + '%</td><td class="n">' + (x.over || '—') + '</td></tr>').join('') +
-    '<tr class="tot"><td><b>الإجمالي</b></td><td class="n"><b>' + a.n + '</b></td><td class="n">' + a.closed + '</td><td class="n">' + a.open + '</td><td class="n">' + fmtDur(a.avg) + '</td><td class="n">' + a.within[0] + '%</td><td class="n">' + a.over + '</td></tr></tbody></table></div>';
-  /* الذروة */
+  const ok = A.centers.filter(x => x.r.closed);
+  h += '<section class="rep-sec"><h3 class="rep-h"><span>3</span>مقارنة المراكز <small>متوسط مدة الإغلاق مقابل الهدف ' + T.avg + ' د</small></h3><div class="card">' +
+    hbar(ok.map(x => ({ label: x.c, v: x.r.avg, txt: fmtDur(x.r.avg), warn: x.r.avg > T.avg })).sort((x, y) => y.v - x.v), { target: T.avg, targetTxt: 'الهدف' }) + '</div>' +
+    '<div class="tbl-wrap"><table class="dtable"><thead><tr><th>المركز</th><th class="n">البلاغات</th><th class="n">انحل</th><th class="n">مفتوح</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">خلال 3 ساعات</th><th class="n">تجاوز ساعتين</th></tr></thead><tbody>' +
+    A.centers.map(x => '<tr><td><b>' + x.c + '</b></td><td class="n">' + x.r.n + '</td><td class="n">' + x.r.closed + '</td><td class="n">' + (x.r.open || '—') + '</td><td class="n">' + fmtDur(x.r.avg) + '</td><td class="n"><span class="rag sm ' + (x.r.within[0] >= T.w60 ? 'g' : x.r.within[0] >= T.w60 - 10 ? 'a' : 'r') + '">' + x.r.within[0] + '%</span></td><td class="n">' + x.r.within[3] + '%</td><td class="n">' + (x.over || '—') + '</td></tr>').join('') +
+    '<tr class="tot"><td><b>الإجمالي</b></td><td class="n"><b>' + a.n + '</b></td><td class="n">' + a.closed + '</td><td class="n">' + a.open + '</td><td class="n">' + fmtDur(a.avg) + '</td><td class="n">' + a.within[0] + '%</td><td class="n">' + a.within[3] + '%</td><td class="n">' + a.over + '</td></tr></tbody></table></div></section>';
+  /* الطلب بالساعة */
   const hk = Object.keys(A.hours).map(Number).sort((x, y) => x - y);
-  if (hk.length > 1) {
-    const mx = Math.max(...hk.map(k => A.hours[k]));
-    h += '<p class="sec-title">البلاغات الجديدة بالساعة' + (A.peak ? ' <small>الذروة ' + A.peak.from + ':00–' + A.peak.to + ':00</small>' : '') + '</p><div class="card"><div class="bars" style="direction:ltr">' +
-      hk.map(k => '<div class="' + (A.peak && k >= A.peak.from && k < A.peak.to ? 'rain' : '') + '" style="height:' + (100 * A.hours[k] / mx) + '%" data-t="' + k + ':00 — ' + A.hours[k] + '"></div>').join('') + '</div>' +
-      '<div class="row" style="direction:ltr;justify-content:space-between;font-size:.72rem;color:var(--muted)"><span>' + hk[0] + ':00</span><span>' + hk[hk.length - 1] + ':00</span></div></div>';
-  }
-  /* المقاولين في المركز المختار */
-  const cs = CENTERS.filter(c => F.some(f => f.center === c));
-  h += '<div class="row"><p class="sec-title" style="margin:0">المقاولين</p><span class="spacer"></span><div class="seg">' + cs.map(c => '<button data-c="' + c + '" aria-pressed="' + (c === center) + '">' + c + '</button>').join('') + '</div></div>';
-  const T = table(FC, 'co').filter(r => r.n);
-  const enough = T.filter(r => r.closed >= 5), slow = enough.length ? Math.max(...enough.map(r => r.avg)) : -1, fast = enough.length ? Math.min(...enough.map(r => r.avg)) : -1;
-  h += T.length ? '<div class="tbl-wrap"><table class="dtable"><thead><tr><th>المقاول</th><th class="n">البلاغات</th><th class="n">مفتوح</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">تجاوز ساعتين</th></tr></thead><tbody>' +
-    T.map(r => { const over = FC.filter(f => (f.co || (f.tech ? 'غير محدد' : 'بدون فني')) === r.k && f.dur > 120).length;
-      return '<tr><td>' + esc(r.k) + (r.avg === slow && enough.length > 1 ? ' <span class="pill red">الأبطأ</span>' : r.avg === fast && enough.length > 1 ? ' <span class="pill green">الأفضل</span>' : '') + '</td><td class="n"><b>' + r.n + '</b></td><td class="n">' + (r.open || '—') + '</td><td class="n">' + (r.closed ? fmtDur(r.avg) : '—') + '</td><td class="n">' + (r.closed ? r.within[0] + '%' : '—') + '</td><td class="n" style="' + (over ? 'color:var(--bad);font-weight:700' : '') + '">' + (over || '—') + '</td></tr>'; }).join('') + '</tbody></table></div>'
+  if (hk.length > 1) h += '<section class="rep-sec"><h3 class="rep-h"><span>4</span>نمط الطلب خلال اليوم' + (A.peak ? ' <small>الذروة ' + A.peak.from + ':00–' + A.peak.to + ':00 · ' + A.peak.x + '× المعدل</small>' : '') + '</h3><div class="card">' + hours(hk, A.hours, A.peak) + '<p class="hint">عدد البلاغات الجديدة حسب ساعة فتحها. الأعمدة الغامقة = فترة الذروة.</p></div></section>';
+  /* المقاولين */
+  const cs = CENTERS.filter(c => F.some(f => f.center === c)), B = contractorBoard(FC);
+  h += '<section class="rep-sec"><div class="row"><h3 class="rep-h" style="margin:0"><span>5</span>أداء المقاولين — ' + center + '</h3><span class="spacer"></span><div class="seg no-print">' + cs.map(c => '<button data-c="' + c + '" aria-pressed="' + (c === center) + '">' + c + '</button>').join('') + '</div></div>';
+  h += B.length ? '<div class="tbl-wrap"><table class="dtable"><thead><tr><th>المقاول</th><th class="n">البلاغات</th><th class="n">مفتوح</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">تجاوز ساعتين</th><th class="n">الدرجة</th></tr></thead><tbody>' +
+    B.map(r => '<tr' + (r.real ? '' : ' class="muted"') + '><td>' + esc(r.k) + '</td><td class="n"><b>' + r.n + '</b></td><td class="n">' + (r.open || '—') + '</td><td class="n">' + (r.closed ? fmtDur(r.avg) : '—') + '</td><td class="n">' + (r.closed ? r.within[0] + '%' : '—') + '</td><td class="n">' + (r.over120 || '—') + '</td><td class="n">' + (r.real && r.score != null ? '<span class="rag sm ' + r.s + '">' + r.score + '</span>' : '—') + '</td></tr>').join('') + '</tbody></table></div>' +
+    '<div class="card"><p class="pg" style="margin:0">توزيع مدة الإغلاق لكل مقاول</p>' + stack100(B.filter(r => r.n >= 3).map(r => ({ label: r.k, parts: r.b }))) + '<p class="hint">الدرجة من 100 = نصفها نسبة الإغلاق خلال ساعة، ونصفها الالتزام بعدم تجاوز ساعتين. أخضر ≥ 75، برتقالي ≥ 60.</p></div>'
     : '<div class="empty">ما فيه بلاغات لهالمركز.</div>';
-  /* المفتوح الأقدم + النقاط الساخنة */
+  h += '</section>';
+  /* التوصيات */
+  const RC = recommendations(A, center, T, { noCause, located });
+  if (RC.length) h += '<section class="rep-sec"><h3 class="rep-h"><span>6</span>التوصيات والإجراءات</h3><div class="tbl-wrap"><table class="dtable recs"><thead><tr><th>الأولوية</th><th>الإجراء</th><th>المبرر</th><th>المسؤول</th></tr></thead><tbody>' +
+    RC.map(r => '<tr><td><span class="prio p' + r.p + '">' + PRIO[r.p] + '</span></td><td><b>' + bidi(r.t) + '</b></td><td>' + bidi(r.why) + '</td><td>' + esc(r.who) + '</td></tr>').join('') + '</tbody></table></div></section>';
+  /* ملاحظات تشغيلية */
+  const pts = insights(A, center);
+  if (pts.length) h += '<section class="rep-sec"><h3 class="rep-h"><span>7</span>ملاحظات تشغيلية</h3><div class="card"><ul class="insights">' + pts.map(p => '<li class="' + (p.lv || '') + '">' + p.t + '</li>').join('') + '</ul></div></section>';
   const open = FC.filter(f => f.open).sort((x, y) => y.dur - x.dur);
-  if (open.length) h += '<p class="sec-title">مفتوح وقت آخر تقرير — ' + center + ' <small>' + open.length + '</small></p><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المهمة</th><th>المحول</th><th>المقاول</th><th class="n">العمر</th><th>التصعيد</th></tr></thead><tbody>' +
-    open.slice(0, 10).map(f => '<tr><td class="ltr">' + esc(f.id) + '</td><td class="ltr">' + esc(f.ref.tr || '') + '</td><td>' + esc(f.co || 'بدون فني') + '</td><td class="n" style="' + (f.dur >= 120 ? 'color:var(--bad);font-weight:700' : '') + '">' + fmtDur(f.dur) + '</td><td style="font-size:.78rem">' + escalation(f.dur).t + '</td></tr>').join('') + '</tbody></table></div>';
+  if (open.length) h += '<section class="rep-sec"><h3 class="rep-h"><span>8</span>المفتوح وقت آخر تقرير — ' + center + ' <small>' + open.length + '</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المهمة</th><th>المحول</th><th>المقاول</th><th class="n">العمر</th><th>التصعيد</th></tr></thead><tbody>' +
+    open.slice(0, 10).map(f => '<tr><td class="ltr">' + esc(f.id) + '</td><td class="ltr">' + esc(f.ref.tr || '') + '</td><td>' + esc(f.co || 'بدون فني') + '</td><td class="n" style="' + (f.dur >= 120 ? 'color:var(--bad);font-weight:700' : '') + '">' + fmtDur(f.dur) + '</td><td style="font-size:.78rem">' + escalation(f.dur).t + '</td></tr>').join('') + '</tbody></table></div></section>';
   h += hotspotsHtml(FC, center);
+  h += '<section class="rep-sec rep-method"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة» من إدارة كهرباء القصيم. كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ اللي يختفي من التقرير التالي يُحتسب منحلًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (دقة ± ' + Math.round(Math.max(...A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at), 0) / 120000) + ' د). البلاغات اللي انفتحت وانحلت قبل أول تقرير ما تظهر. المقاول مستنتج من اسم الفني. الأهداف قابلة للتعديل من الإعدادات.</p></section>';
   box.innerHTML = h;
   const text = summary(A);
   box.querySelector('#brWa').href = waLink(text);
   box.querySelector('#brCopy').onclick = () => copy(text);
+  box.querySelector('#brPrint').onclick = () => { document.body.classList.add('printing'); setTimeout(() => { window.print(); }, 50); };
   box.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { day = b.dataset.d; render(); });
   box.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { center = b.dataset.c; render(); });
 }
+
+/* أرقام المحولات والمهام داخل جملة عربية: نعزلها عشان ما تنقلب */
+const bidi = t => esc(t).replace(/(4100-Q[A-Z]{1,2}S-\d+|Q[A-Z]{1,2}S-\d+|\b5\d{7}\b)/g, '<bdi class="ltr">$1</bdi>');
 
 /* النقاط الساخنة: حساب بلّغ أكثر من مرة، ومحول عليه 3 بلاغات أو أكثر */
 export function hotspotsHtml(FC, label) {
