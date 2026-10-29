@@ -26,6 +26,11 @@ export function secGroupRows(items) {
 function cells(toks) {
   /* حرف بعرض صفر (غالبًا ي في آخر الكلمة) يطلع في مكان غلط: مكانه الصحيح قبل الحرف اللي قبله */
   toks = toks.slice();
+  /* حرف بعرض صفر بعد كلمة كاملة (مثل «محمد البطح» + «ي») = آخر حرف في الكلمة */
+  for (let i = toks.length - 1; i > 0; i--) {
+    const t = toks[i], p = toks[i - 1];
+    if (t.w === 0 && t.s.length === 1 && AR.test(t.s) && p.s.length > 2 && AR.test(p.s)) { toks[i - 1] = { ...p, s: p.s + t.s }; toks.splice(i, 1); }
+  }
   for (let i = 1; i < toks.length; i++) {
     const t = toks[i], p = toks[i - 1];
     if (t.w === 0 && t.s.length === 1 && AR.test(t.s) && p.s.length <= 2 && AR.test(p.s)) { toks[i] = p; toks[i - 1] = t; }
