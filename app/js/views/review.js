@@ -1,13 +1,13 @@
-/* ٣) المراجعة: البلاغات المقفلة (وتسجيل سببها)، الحسابات المتكررة، المحولات المتكررة، النقاط الساخنة */
+/* 3) المراجعة: البلاغات المقفلة (وتسجيل سببها)، الحسابات المتكررة، المحولات المتكررة، النقاط الساخنة */
 import { faults } from '../analysis/model.js';
-import { faultCard, bindCards } from '../core/ui.js';
+import { faultCard, bindCards, causeButtons, bindCauses } from '../core/ui.js';
 import { goto, pickTr, violationSheet } from './ops.js';
 import { trLabel } from '../core/geo.js';
 import { esc, fmtDur, fmtDateTime, DAY, now, groupBy } from '../core/util.js';
 import { causeName } from '../core/const.js';
 
-let root, tab = 'nocause', period = 7, limit = 40;
-const PERIODS = [[1, 'اليوم'], [7, '٧ أيام'], [30, '٣٠ يوم'], [90, '٩٠ يوم'], [0, 'الكل']];
+let root, tab = 'nocause', period = 7, limit = 60;
+const PERIODS = [[1, 'اليوم'], [7, '7 أيام'], [30, '30 يوم'], [90, '90 يوم'], [0, 'الكل']];
 
 function mount(el) { root = el; el.innerHTML = '<div class="pad" id="rvBody"></div>'; }
 function render() {
@@ -23,7 +23,7 @@ function render() {
     list = (tab === 'nocause' ? noCause : closed);
     if (tab === 'nocause') h += '<p class="hint">سجّل سبب كل عطل مقفل بضغطة. بدون السبب ما نقدر نفرّق بين إحلال وتعزيز وصيانة في الحصر.</p>';
     const shown = list.slice(0, limit);
-    h += shown.length ? '<div class="slist">' + shown.map(f => faultCard(f, { showCause: true })).join('') + '</div>' : '<div class="empty">' + (tab === 'nocause' ? 'كل البلاغات المقفلة لها سبب 👍' : 'ما فيه بلاغات مقفلة في هالفترة. البلاغ ينقفل لما يختفي من التقرير اللي بعده.') + '</div>';
+    h += shown.length ? (tab === 'nocause' ? '<div class="clist">' + shown.map(crow).join('') + '</div>' : '<div class="slist">' + shown.map(f => faultCard(f, { showCause: true })).join('') + '</div>') : '<div class="empty">' + (tab === 'nocause' ? 'كل البلاغات المقفلة لها سبب 👍' : 'ما فيه بلاغات مقفلة في هالفترة. البلاغ ينقفل لما يختفي من التقرير اللي بعده.') + '</div>';
     if (list.length > limit) h += '<button class="tbtn" id="rvMore" style="align-self:center">عرض المزيد (' + (list.length - limit) + ')</button>';
     list = shown;
   } else if (tab === 'acc') {
@@ -46,9 +46,15 @@ function render() {
   box.innerHTML = h;
   box.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { period = +b.dataset.p; limit = 40; render(); });
   box.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { tab = b.dataset.t; limit = 40; render(); });
+  box.querySelectorAll('.crow').forEach(el => { const f = list.find(x => x.src + ':' + x.id === el.dataset.id); if (f) bindCauses(el, f); });
   const more = box.querySelector('#rvMore'); if (more) more.onclick = () => { limit += 40; render(); };
   box.querySelectorAll('tr [data-goto]').forEach(b => b.onclick = () => { const [a, c] = b.dataset.goto.split(',').map(Number); goto(a, c); });
   box.querySelectorAll('tr [data-pick]').forEach(b => b.onclick = () => pickTr(b.dataset.pick));
   bindCards(box, list, { onGoto: goto, onPick: pickTr, onViol: violationSheet, rerender: render });
+}
+/* صف مختصر لتسجيل السبب بسرعة */
+function crow(f) {
+  return '<div class="crow" data-id="' + esc(f.src + ':' + f.id) + '"><div class="cm"><b class="ltr">' + esc(f.ref.tr || ('#' + f.id)) + '</b><span>' + esc(f.center) + '</span>' +
+    (f.co ? '<span>' + esc(f.co) + '</span>' : '') + '<span>' + (f.uncertain ? '~' : '') + fmtDur(f.dur) + '</span><span class="ltr">' + esc(f.src === 'sec' ? f.id : '') + '</span></div>' + causeButtons(f.cause) + '</div>';
 }
 export default { mount, render, tick: false };

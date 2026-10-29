@@ -1,4 +1,4 @@
-/* ٦) الإحصائيات: يومي/أسبوعي/شهري لكل مقاول ومركز ومشرف وفني ومحول */
+/* 6) الإحصائيات: يومي/أسبوعي/شهري لكل مقاول ومركز ومشرف وفني ومحول */
 import { S } from '../store/repo.js';
 import { faults } from '../analysis/model.js';
 import { DIMS, LIMITS, table, row, daily, weekly } from '../analysis/stats.js';
@@ -7,7 +7,7 @@ import { CENTERS } from '../core/const.js';
 import { esc, fmtDur, DAY, now, csv, download, isoDay } from '../core/util.js';
 
 let root, period = 30, dim = 'co', center = 'بريدة', sortK = 'n', sortDir = -1;
-const PERIODS = [[1, 'اليوم'], [7, 'أسبوع'], [30, 'شهر'], [90, '٣ أشهر'], [365, 'سنة']];
+const PERIODS = [[1, 'اليوم'], [7, 'أسبوع'], [30, 'شهر'], [90, '3 أشهر'], [365, 'سنة']];
 
 function mount(el) { root = el; el.innerHTML = '<div class="pad" id="stBody"></div>'; }
 function render() {
@@ -23,14 +23,27 @@ function render() {
   h += '<div class="card"><div class="kgrid" style="grid-template-columns:repeat(auto-fit,minmax(90px,1fr))"><div><b>' + tot.n + '</b><span>بلاغ</span></div><div><b>' + tot.closed + '</b><span>مقفل</span></div><div><b>' + (tot.closed ? fmtDur(tot.avg) : '—') + '</b><span>متوسط المدة</span></div>' +
     LIMITS.map((L, i) => '<div><b>' + (tot.closed ? tot.within[i] + '%' : '—') + '</b><span>خلال ' + L + ' د</span></div>').join('') + '</div>' +
     (tot.uncertain ? '<p class="hint">' + tot.uncertain + ' بلاغ مدته تقريبية (الفرق بين التقريرين أكثر من ساعتين). ارفع التقرير بشكل أكثر انتظامًا لدقة أعلى.</p>' : '') + '</div>';
-  /* الاتجاه */
-  if (period > 1) {
-    let ser = daily(F, start - (start % DAY), now() + 1);
-    ser.forEach(d => d.rain = !!S.settings.rainDays[d.d]);
-    if (period >= 90) ser = weekly(ser);
+  /* الاتجاه: بالساعة لليوم، وباليوم/الأسبوع للفترات الأطول (من أول يوم فيه بيانات) */
+  if (F.length) {
+    let ser, label;
+    const t0 = Math.min(...F.map(f => f.start)), t1 = Math.max(...F.map(f => f.start));
+    if (period === 1 || t1 - t0 <= 2 * DAY) {
+      /* بالساعة من أول ساعة فيها بلاغ لآخر ساعة */
+      const h0 = new Date(t0).setMinutes(0, 0, 0), H = 3600000, n = Math.floor((t1 - h0) / H) + 1;
+      ser = Array.from({ length: n }, (_, i) => ({ d: String(new Date(h0 + i * H).getHours()).padStart(2, '0') + ':00', n: 0 }));
+      F.forEach(f => ser[Math.floor((f.start - h0) / H)].n++);
+      label = 'عدد البلاغات الجديدة بالساعة';
+    } else {
+      const first = Math.max(start, Math.min(...F.map(f => f.start)));
+      ser = daily(F, new Date(first).setHours(0, 0, 0, 0), now() + 1);
+      ser.forEach(d => d.rain = !!S.settings.rainDays[d.d]);
+      if (ser.length > 45) ser = weekly(ser);
+      label = (ser.length > 45 ? 'أسبوعي' : 'يومي') + ' · الأزرق الغامق = يوم مطر';
+    }
     const mx = Math.max(1, ...ser.map(d => d.n));
-    h += '<p class="sec-title">الاتجاه <small>' + (period >= 90 ? 'أسبوعي' : 'يومي') + ' · الأزرق الغامق = يوم مطر</small></p><div class="card"><div class="bars">' +
-      ser.map(d => '<div class="' + (d.rain ? 'rain' : '') + '" style="height:' + (100 * d.n / mx) + '%" data-t="' + d.d + ': ' + d.n + '"></div>').join('') + '</div></div>';
+    h += '<p class="sec-title">الاتجاه <small>' + label + '</small></p><div class="card"><div class="bars" style="direction:ltr">' +
+      ser.map(d => '<div class="' + (d.rain ? 'rain' : '') + '" style="height:' + (100 * d.n / mx) + '%" data-t="' + d.d + ': ' + d.n + '"></div>').join('') + '</div>' +
+      '<div class="row" style="direction:ltr;justify-content:space-between;font-size:.72rem;color:var(--muted)"><span>' + ser[0].d + '</span><span>' + ser[ser.length - 1].d + '</span></div></div>';
   }
   /* الجدول */
   h += '<div class="row"><div class="seg">' + DIMS.map(d => '<button data-d="' + d.k + '" aria-pressed="' + (dim === d.k) + '">' + d.t + '</button>').join('') + '</div><span class="spacer"></span><button class="tbtn" id="stExp">تصدير Excel</button></div>';

@@ -4,8 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%230B57D0%22/%3E%3Cpath d=%22M13 3L5.5 13.5H11L10 21l7.5-10.5H12z%22 fill=%22white%22/%3E%3C/svg%3E">
 <meta name="robots" content="noindex">
-<title>منصة الأحداث — كهرباء بريدة</title>
+<title>عمليات التوزيع — كهرباء بريدة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="css/app.css">
 </head>
@@ -13,10 +16,12 @@
 <div class="app">
   <header class="bar">
     <div class="bar-row">
-      <button class="lvl" id="lvlBtn" type="button">المستوى ١ — عادي</button>
+      <a class="brand" href="#ops" aria-label="الرئيسية"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><span class="brand-t"><b>عمليات التوزيع</b><small>كهرباء بريدة</small></span></a>
+      <button class="lvl" id="lvlBtn" type="button">المستوى 1 — عادي</button>
       <div class="ev"><span class="ev-sub" id="evSub"></span></div>
+      <span class="fresh none" id="fresh"><i></i><span>ما فيه تقرير</span></span>
       <label class="up-btn" for="pdfIn" title="رفع تقرير الكهرباء (PDF)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
         <span>رفع التقرير</span><input type="file" id="pdfIn" accept=".pdf,application/pdf" hidden multiple>
       </label>
     </div>

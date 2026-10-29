@@ -11,7 +11,7 @@ export const ACTIONS = {
 };
 
 export function analyze(faults, rules, nowT = Date.now()) {
-  /* النسبة العامة للمطر والذروة في كل البيانات: المحول لازم يكون أعلى منها بوضوح (×١٫٥) عشان ما يطلع كل شي "ذروة" لو البيانات كلها صيف */
+  /* النسبة العامة للمطر والذروة في كل البيانات: المحول لازم يكون أعلى منها بوضوح (×1.5) عشان ما يطلع كل شي "ذروة" لو البيانات كلها صيف */
   const allRain = pct(faults.filter(f => f.rain).length, faults.length), allPeak = pct(faults.filter(f => f.peak).length, faults.length);
   const lifted = (share, base) => base < 85 && share >= Math.max(1, base) * 1.5;
   const groups = new Map();

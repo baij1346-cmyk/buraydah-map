@@ -1,4 +1,4 @@
-/* ٤) الضبط: سجل مخالفات كل مقاول بالوقت والدليل، وتصدير ملف جاهز للمحضر */
+/* 4) الضبط: سجل مخالفات كل مقاول بالوقت والدليل، وتصدير ملف جاهز للمحضر */
 import { S, deleteViolation } from '../store/repo.js';
 import { faults } from '../analysis/model.js';
 import { openSheet, closeSheet } from '../core/ui.js';
@@ -7,7 +7,7 @@ import { VIOL, violName } from '../core/const.js';
 import { esc, fmtDateTime, fmtDur, DAY, now, csv, download, isoDay, armed } from '../core/util.js';
 
 let root, co = '', period = 30;
-const PERIODS = [[7, '٧ أيام'], [30, '٣٠ يوم'], [90, '٩٠ يوم'], [0, 'الكل']];
+const PERIODS = [[7, '7 أيام'], [30, '30 يوم'], [90, '90 يوم'], [0, 'الكل']];
 
 function mount(el) { root = el; el.innerHTML = '<div class="pad" id="ctBody"></div>'; }
 function render() {

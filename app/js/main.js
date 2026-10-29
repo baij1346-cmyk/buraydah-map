@@ -8,7 +8,7 @@ import { LV } from './core/const.js';
 import { toast, fmtDur, fmtTime, mins, now, esc } from './core/util.js';
 import { metrics, suggest, setLevel } from './core/levels.js';
 import { openSheet, closeSheet, ctx } from './core/ui.js';
-import { openFaults } from './analysis/model.js';
+import { openFaults, faults } from './analysis/model.js';
 import ops from './views/ops.js';
 import manage from './views/manage.js';
 import review from './views/review.js';
@@ -45,21 +45,30 @@ const lvlBtn = document.getElementById('lvlBtn');
 function renderBar() {
   const l = repo.S.event.level || 1, m = metrics(), sg = suggest(m), e = repo.S.event;
   lvlBtn.style.background = LV[l].bg; lvlBtn.style.color = LV[l].c; lvlBtn.textContent = 'المستوى ' + l + ' — ' + LV[l].n;
-  const snap = repo.latestSnapshot();
-  let sub = snap ? 'آخر تقرير: ' + fmtTime(snap.at) + ' (قبل ' + fmtDur(mins(now() - snap.at)) + ')' : 'ما فيه تقرير مرفوع';
-  if (sg > l) sub = '⚠️ المؤشرات تقترح المستوى ' + sg + ' — ' + LV[sg].n;
+  /* حداثة التقرير: أخضر أقل من 45 د، برتقالي لين ساعتين، أحمر بعدها */
+  const snap = repo.latestSnapshot(), fresh = document.getElementById('fresh');
+  if (snap) {
+    const age = mins(now() - snap.at);
+    fresh.className = 'fresh' + (age >= 120 ? ' stale' : age >= 45 ? ' old' : '');
+    fresh.innerHTML = '<i></i><span>آخر تقرير ' + fmtTime(snap.at) + ' · قبل ' + fmtDur(age) + '</span>';
+    fresh.title = 'آخر تقرير كهرباء مرفوع: ' + fmtTime(snap.at);
+  } else { fresh.className = 'fresh none'; fresh.innerHTML = '<i></i><span>ما فيه تقرير</span>'; }
+  let sub = '', warn = false;
+  if (sg > l) { sub = 'المؤشرات تقترح المستوى ' + sg + ' — ' + LV[sg].n; warn = true; }
   else if (l > 1 && LV[l].cad) {
     const last = repo.S.settings.lastUpd && repo.S.settings.lastUpd > (e.start || 0) ? repo.S.settings.lastUpd : e.start || now();
     const left = LV[l].cad - mins(now() - last);
-    sub = (left <= 0 ? '⚠️ موعد تحديث الحالة الآن' : 'التحديث القادم بعد ' + fmtDur(left)) + ' · ' + sub;
-  }
-  const evSub = document.getElementById('evSub'); evSub.textContent = sub;
-  evSub.style.color = snap && mins(now() - snap.at) >= 30 && sg <= l ? '#B06000' : '';
+    sub = left <= 0 ? 'موعد تحديث الحالة الآن' : 'تحديث الحالة القادم بعد ' + fmtDur(left); warn = left <= 0;
+  } else if (e.start) sub = 'حدث معلن منذ ' + fmtDur(mins(now() - e.start));
+  const evSub = document.getElementById('evSub'); evSub.textContent = sub; evSub.className = 'ev-sub' + (warn ? ' warn' : '');
   const op = openFaults(), b90 = op.filter(f => f.dur >= 90 && f.dur < 120).length, b120 = op.filter(f => f.dur >= 120).length;
+  const day0 = new Date().setHours(0, 0, 0, 0), today = faults({ from: day0 - 86400000 }).filter(f => !f.open && f.end >= day0);
+  const avgToday = today.length ? Math.round(today.reduce((a, f) => a + f.dur, 0) / today.length) : null;
   const noCause = [...repo.S.tickets.values()].filter(t => t.closed && !t.cause).length + repo.S.reports.filter(r => r.st === 'done' && !r.cause).length;
   document.getElementById('kpis').innerHTML =
-    kpi(op.length, 'مفتوح', '', 'ops') + kpi(b90, '٩٠–١١٩ د', b90 ? 'warn' : '', 'ops') + kpi(b120, 'تجاوز ساعتين', b120 ? 'alert' : '', 'ops') +
-    kpi(m.mv, 'فصل مغذي', m.mv ? 'alert' : '', 'manage') + kpi(noCause, 'مقفل بدون سبب', noCause ? 'warn' : '', 'review');
+    kpi(op.length, 'مفتوح', '', 'ops') + kpi(b90, '90–119 د', b90 ? 'warn' : '', 'ops') + kpi(b120, 'تجاوز ساعتين', b120 ? 'alert' : '', 'ops') +
+    (m.mv ? kpi(m.mv, 'فصل مغذي', 'alert', 'manage') : '') + kpi(today.length, 'انقفل اليوم', '', 'stats') +
+    kpi(avgToday == null ? '—' : fmtDur(avgToday), 'متوسط الإغلاق اليوم', avgToday > 90 ? 'warn' : '', 'stats') + kpi(noCause, 'مقفل بدون سبب', noCause ? 'warn' : '', 'review');
   document.querySelectorAll('.kpi[data-go]').forEach(b => b.onclick = () => app.go(b.dataset.go));
   badge('bOps', b90 + b120); badge('bReview', noCause); badge('bMore', noCause);
 }
@@ -67,7 +76,7 @@ const kpi = (n, t, cls, go) => '<button class="kpi ' + cls + '" data-go="' + go 
 function badge(id, n) { const e = document.getElementById(id); if (e) { e.hidden = !n; e.textContent = n; } }
 lvlBtn.onclick = () => {
   const l = repo.S.event.level || 1, m = metrics(), sg = suggest(m);
-  const sh = openSheet('<h2>مستوى الحدث</h2><p class="hint">المؤشرات الآن: ' + m.open + ' مفتوح · ' + m.over90 + ' تجاوز ٩٠ د · ' + m.mv + ' فصل مغذي · المقترح: <b>المستوى ' + sg + '</b></p>' +
+  const sh = openSheet('<h2>مستوى الحدث</h2><p class="hint">المؤشرات الآن: ' + m.open + ' مفتوح · ' + m.over90 + ' تجاوز 90 د · ' + m.mv + ' فصل مغذي · المقترح: <b>المستوى ' + sg + '</b></p>' +
     [1, 2, 3, 4].map(i => '<button class="lvb' + (i === l ? ' cur' : '') + '" data-l="' + i + '" style="--c:' + (i === 4 ? '#A50E0E' : LV[i].c) + '"><b>المستوى ' + i + ' — ' + LV[i].n + (i === sg && i !== l ? ' (مقترح)' : '') + '</b><span>' + LV[i].what + '</span></button>').join('') +
     '<button class="tbtn" data-x style="justify-content:center">إلغاء</button>');
   sh.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { setLevel(+b.dataset.l); closeSheet(); });

@@ -1,5 +1,5 @@
 /* طبقة البيانات (repository): كل القراءة والكتابة تمر من هنا.
-   الحين: IndexedDB في الجهاز. لاحقًا (المرحلة ٢) تتبدل بـ Supabase بنفس الدوال. */
+   الحين: IndexedDB في الجهاز. لاحقًا (المرحلة 2) تتبدل بـ Supabase بنفس الدوال. */
 import * as db from './idb.js';
 import { reconcile, updatedAt } from '../sec/reconcile.js';
 import { DEF_CO, DEF_RULES } from '../core/const.js';
@@ -23,6 +23,8 @@ export async function init() {
   const K = Object.fromEntries(kv.map(x => [x.k, x.v]));
   S.settings = Object.assign(DEF_SETTINGS(), K.settings || {});
   S.settings.rules = Object.assign({ ...DEF_RULES }, S.settings.rules || {});
+  /* كلمات مقاولين جديدة تنضاف لقائمة المستخدم بدون ما تمس تعديلاته */
+  DEF_CO.forEach(([k, l]) => { if (!S.settings.co.some(x => x[0] === k)) S.settings.co.push([k, l]); });
   S.event = Object.assign(DEF_EVENT(), K.event || {});
   S.seq = K.seq || 1;
   S.snapshots = snaps.sort((a, b) => a.at - b.at);

@@ -1,4 +1,4 @@
-/* ٥) الحصر: خريطة حرارية + ترتيب المحولات حسب الحاجة + تصنيف إحلال/تعزيز/صيانة + تصدير قائمة الأعمال */
+/* 5) الحصر: خريطة حرارية + ترتيب المحولات حسب الحاجة + تصنيف إحلال/تعزيز/صيانة + تصدير قائمة الأعمال */
 import { S, saveSettings } from '../store/repo.js';
 import { faults } from '../analysis/model.js';
 import { analyze, ACTIONS, byZone, suggestRainDays } from '../analysis/hasr.js';
@@ -9,12 +9,12 @@ import { COLORS, causeName } from '../core/const.js';
 import { esc, fmtDate, DAY, now, csv, download, isoDay, pct } from '../core/util.js';
 
 let root, map, heat, pins, period = 90, kind = 'all', act = 'all', limit = 30;
-const PERIODS = [[30, '٣٠ يوم'], [90, '٩٠ يوم'], [365, 'سنة'], [0, 'الكل']];
+const PERIODS = [[30, '30 يوم'], [90, '90 يوم'], [365, 'سنة'], [0, 'الكل']];
 const KINDS = [['all', 'كل الأيام'], ['rain', 'أيام المطر'], ['dry', 'الأيام العادية']];
 
 function mount(el) {
   root = el;
-  el.innerHTML = '<div class="pad"><div class="card" style="padding:0;overflow:hidden"><div style="position:relative;height:min(52vh,460px)"><div class="map" id="hsMap" style="position:absolute;inset:0" aria-label="خريطة حرارية للأعطال"></div></div></div><div id="hsBody" style="display:flex;flex-direction:column;gap:10px"></div></div>';
+  el.innerHTML = '<div class="pad"><div class="card mapcard" style="height:min(52vh,460px)"><div class="map" id="hsMap" aria-label="خريطة حرارية للأعطال"></div></div><div id="hsBody" style="display:flex;flex-direction:column;gap:10px"></div></div>';
   map = makeMap(el.querySelector('#hsMap'));
   pins = L.layerGroup().addTo(map);
 }
@@ -31,7 +31,7 @@ function render() {
   if (heat) map.removeLayer(heat);
   heat = null;
   if (L.heatLayer && pts.length) {
-    const add = () => { if (!map.getSize().x) return setTimeout(add, 200); heat = L.heatLayer(pts, { radius: 22, blur: 18, maxZoom: 15, minOpacity: .3 }).addTo(map); };
+    const add = () => { if (!map.getSize().x) return setTimeout(add, 200); heat = L.heatLayer(pts, { radius: 20, blur: 16, maxZoom: 14, minOpacity: .35, gradient: { .2: '#FDE68A', .45: '#F59E0B', .7: '#DC2626', 1: '#7F1D1D' } }).addTo(map); };
     add();
   }
   pins.clearLayers();
@@ -73,7 +73,7 @@ function render() {
     rule('replaceN', 'إحلال: عدد الأعطال بنفس السبب (كيبل/وصلة/فيوز)', R.replaceN) + rule('replaceDays', '… خلال كم يوم', R.replaceDays) +
     rule('rainShare', 'صيانة: نسبة أعطال أيام المطر ≥ (%)', R.rainShare) + rule('peakShare', 'تعزيز: نسبة أعطال أشهر الذروة ≥ (%)', R.peakShare) + rule('minForPattern', 'أقل عدد أعطال لاعتبار النمط', R.minForPattern) +
     '<div class="prow"><label for="hsPeak">أشهر الذروة (أرقام مفصولة بفاصلة)</label><input id="hsPeak" class="inp sm ltr" value="' + R.peakMonths.join(',') + '"></div>' +
-    '<p class="hint">الأولوية = عدد الأعطال × (١ + لو٢(المتأثرين)) × الاتجاه (يزيد ١٫٣ / يقل ٠٫٨) × خطورة السبب.</p></details>';
+    '<p class="hint">الأولوية = عدد الأعطال × (1 + لو2(المتأثرين)) × الاتجاه (يزيد 1.3 / يقل 0.8) × خطورة السبب.</p></details>';
   box.innerHTML = h;
   box.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { period = +b.dataset.p; limit = 30; render(); });
   box.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { kind = b.dataset.k; render(); });
@@ -94,14 +94,14 @@ function workCard(x, i) {
   return '<div class="work" style="--c:' + (a0 ? ACTIONS[a0].c : '#DADCE0') + '"><div class="top"><b style="color:var(--muted)">' + (i + 1) + '</b>' +
     x.acts.map(a => '<span class="act" style="background:' + ACTIONS[a].c + '">' + ACTIONS[a].t + '</span>').join('') + (x.acts.length ? '' : '<span class="pill">مراقبة</span>') +
     '<b class="ltr">' + esc(trLabel(x.tr)) + '</b>' + zoneChip(x.zone, 22) + '<span class="score" title="درجة الأولوية">' + x.score + '</span></div>' +
-    '<div class="row" style="font-size:.8rem;color:var(--muted)"><span>' + x.n + ' عطل</span><span>آخر ٣٠ يوم: ' + x.n30 + '</span><span>' + TREND[x.trend] + '</span><span>المتأثرين: ' + x.affected + '</span>' + (x.rainN ? '<span>مطر: ' + x.rainN + '</span>' : '') + '<span>آخر عطل: ' + fmtDate(x.last) + '</span>' + (x.center && x.center !== 'بريدة' ? '<span>' + esc(x.center) + '</span>' : '') + '</div>' +
+    '<div class="row" style="font-size:.8rem;color:var(--muted)"><span>' + x.n + ' عطل</span><span>آخر 30 يوم: ' + x.n30 + '</span><span>' + TREND[x.trend] + '</span><span>المتأثرين: ' + x.affected + '</span>' + (x.rainN ? '<span>مطر: ' + x.rainN + '</span>' : '') + '<span>آخر عطل: ' + fmtDate(x.last) + '</span>' + (x.center && x.center !== 'بريدة' ? '<span>' + esc(x.center) + '</span>' : '') + '</div>' +
     (x.why.length ? '<ul><b>ليش؟</b>' + x.why.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul>' : '') +
     (Object.keys(x.causeCount).length ? '<div class="chips2">' + Object.entries(x.causeCount).sort((a, b) => b[1] - a[1]).map(([k, n]) => '<span>' + causeName(k) + ': ' + n + '</span>').join('') + '</div>' : '') +
     '<div class="steps">' + (x.lat != null ? '<button class="icon-btn" data-go="' + x.lat + ',' + x.lng + '">على الخريطة' + (x.approx ? ' (تقريبي)' : '') + '</button>' : '<button class="icon-btn" data-pick="' + esc(x.tr) + '">📍 حدّد مكان المحول</button>') + '</div></div>';
 }
 function exportList(items) {
   const rows = [['قائمة أعمال الشبكة — كهرباء بريدة'], ['الفترة', period ? 'آخر ' + period + ' يوم' : 'الكل', 'الأيام', KINDS.find(k => k[0] === kind)[1], 'تاريخ التصدير', new Date().toLocaleString('en-GB')], [],
-    ['الترتيب', 'المحول', 'نوع العمل', 'الدرجة', 'المنطقة', 'المركز', 'عدد الأعطال', 'آخر ٣٠ يوم', 'الاتجاه', 'المتأثرين', 'أعطال أيام المطر', 'الأسباب', 'الدليل (ليش؟)', 'خط العرض', 'خط الطول', 'رابط الموقع']];
+    ['الترتيب', 'المحول', 'نوع العمل', 'الدرجة', 'المنطقة', 'المركز', 'عدد الأعطال', 'آخر 30 يوم', 'الاتجاه', 'المتأثرين', 'أعطال أيام المطر', 'الأسباب', 'الدليل (ليش؟)', 'خط العرض', 'خط الطول', 'رابط الموقع']];
   items.forEach((x, i) => rows.push([i + 1, trLabel(x.tr), x.acts.map(a => ACTIONS[a].t).join(' + ') || 'مراقبة', x.score, x.zone >= 0 ? G.ZS[x.zone].L : '', x.center, x.n, x.n30, TREND[x.trend], x.affected, x.rainN,
     Object.entries(x.causeCount).map(([k, n]) => causeName(k) + ' ' + n).join('، '), x.why.join(' | '), x.lat ?? '', x.lng ?? '', x.lat != null ? 'https://www.google.com/maps?q=' + x.lat + ',' + x.lng : '']));
   download('قائمة_أعمال_الشبكة_' + isoDay(now()) + '.csv', csv(rows));

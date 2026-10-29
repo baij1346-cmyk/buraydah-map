@@ -1,7 +1,7 @@
 /* عناصر واجهة مشتركة: النافذة السفلية، الخريطة، بطاقة البلاغ */
 import { G, zoneOf } from './geo.js';
 import { COLORS, BK, bucket, CAUSES, escalation, PRN, typeName, ST, DELAY } from './const.js';
-import { esc, fmtDur, fmtTime, fmtDateTime, copy } from './util.js';
+import { esc, fmtDur, fmtTime, fmtDateTime, copy, toast } from './util.js';
 import { S, updateTicket, updateReport, setReportStatus } from '../store/repo.js';
 
 /* سياق مشترك بين الأقسام (يعبّيه main.js): ctx.go(v) ينقل للقسم فورًا */
@@ -20,14 +20,64 @@ document.addEventListener('click', e => { if (e.target === modal()) closeSheet()
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal().hidden) closeSheet(); });
 
 /* ---------- الخريطة ---------- */
-export function makeMap(el, { zones = true } = {}) {
+/* خرائط الأساس: فاتحة (افتراضي)، شوارع، قمر صناعي */
+const BASE = {
+  light: { t: 'فاتحة', url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attr: '&copy; OpenStreetMap &copy; CARTO' },
+  streets: { t: 'شوارع', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attr: '&copy; OpenStreetMap &copy; CARTO' },
+  sat: { t: 'قمر صناعي', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' }
+};
+const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem('map-' + k); localStorage.setItem('map-' + k, v); } catch (e) { return null; } };
+const IC = {
+  plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>',
+  fit: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  loc: '<circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7.5"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  zones: '<rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 12h17M12 3.5v17"/>'
+};
+const btn = (k, title) => '<button type="button" data-k="' + k + '" title="' + title + '" aria-label="' + title + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC[k] + '</svg></button>';
+
+/* خريطة بأزرار مخصصة. opts.zones: إظهار حدود المناطق (يقدر المستخدم يخفيها) */
+export function makeMap(el, { zones = true, labels = true } = {}) {
   const b = L.latLngBounds([G.LA[0], G.LO[0]], [G.LA[1], G.LO[1]]);
-  const map = L.map(el, { zoomControl: false, zoomSnap: .25, maxZoom: 19, minZoom: 9 }).fitBounds(b, { padding: [4, 4] });
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
-  if (zones) G.ZS.forEach((q, i) => {
-    L.rectangle([[q.lat[0], q.lng[0]], [q.lat[1], q.lng[1]]], { color: COLORS[i], weight: 2, fillOpacity: .06, interactive: false }).addTo(map);
-    L.marker(q.c, { icon: L.divIcon({ className: '', html: '<div class="zl" style="background:' + COLORS[i] + '">' + q.L + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] }), interactive: false, keyboard: false }).addTo(map);
+  const map = L.map(el, { zoomControl: false, zoomSnap: .25, maxZoom: 19, minZoom: 7, attributionControl: true }).fitBounds(b, { padding: [10, 10] });
+  map.attributionControl.setPrefix(false);
+  let baseKey = BASE[pref('base')] ? pref('base') : 'light', base = null;
+  const setBase = k => { if (base) map.removeLayer(base); baseKey = k; base = L.tileLayer(BASE[k].url, { maxZoom: 19, subdomains: 'abcd', attribution: BASE[k].attr, detectRetina: true }).addTo(map); base.bringToBack(); pref('base', k); };
+  setBase(baseKey);
+  /* المناطق: حدود متقطعة خفيفة + حرف صغير */
+  const zl = L.layerGroup();
+  G.ZS.forEach((q, i) => {
+    L.rectangle([[q.lat[0], q.lng[0]], [q.lat[1], q.lng[1]]], { color: COLORS[i], weight: 1.5, opacity: .8, dashArray: '5 5', fillColor: COLORS[i], fillOpacity: .035, interactive: false }).addTo(zl);
+    if (labels) L.marker(q.c, { icon: L.divIcon({ className: '', html: '<div class="zl" style="background:' + COLORS[i] + '">' + q.L + '</div>', iconSize: [24, 24], iconAnchor: [12, 12] }), interactive: false, keyboard: false, zIndexOffset: -1000 }).addTo(zl);
   });
+  let showZones = zones && pref('zones') !== '0';
+  if (showZones) zl.addTo(map);
+  /* الأزرار */
+  const ctl = document.createElement('div'); ctl.className = 'mctl';
+  ctl.innerHTML = '<div class="grp">' + btn('plus', 'تكبير') + btn('minus', 'تصغير') + '</div><div class="grp">' + btn('fit', 'عرض الكل') + btn('loc', 'موقعي') + '</div><div class="grp">' + btn('layers', 'نوع الخريطة') + (zones ? btn('zones', 'مناطق المقاولين') : '') + '</div>';
+  el.parentElement.appendChild(ctl);
+  L.DomEvent.disableClickPropagation(ctl);
+  const zb = ctl.querySelector('[data-k="zones"]'); if (zb) zb.setAttribute('aria-pressed', showZones);
+  let me = null;
+  ctl.addEventListener('click', e => {
+    const k = (e.target.closest('button') || {}).dataset?.k; if (!k) return;
+    if (k === 'plus') map.zoomIn(); else if (k === 'minus') map.zoomOut();
+    else if (k === 'fit') (map._fit || (() => map.fitBounds(b, { padding: [10, 10] })))();
+    else if (k === 'layers') { const ks = Object.keys(BASE), n = ks[(ks.indexOf(baseKey) + 1) % ks.length]; setBase(n); toast('الخريطة: ' + BASE[n].t); }
+    else if (k === 'zones') { showZones = !showZones; showZones ? zl.addTo(map) : map.removeLayer(zl); zb.setAttribute('aria-pressed', showZones); pref('zones', showZones ? '1' : '0'); }
+    else if (k === 'loc') {
+      if (!navigator.geolocation) return toast('الموقع غير متاح في هذا المتصفح');
+      navigator.geolocation.getCurrentPosition(p => {
+        const ll = [p.coords.latitude, p.coords.longitude];
+        if (me) map.removeLayer(me);
+        me = L.circleMarker(ll, { radius: 8, color: '#fff', weight: 3, fillColor: '#1A73E8', fillOpacity: 1 }).addTo(map);
+        map.setView(ll, 16);
+      }, () => toast('ما قدرت أحدد موقعك. تأكد من السماح بالموقع'), { enableHighAccuracy: true, timeout: 10000 });
+    }
+  });
+  /* الحروف تتزاحم لما نبعد: نخفيها تحت زوم 12 */
+  const zcls = () => el.classList.toggle('zoom-lo', map.getZoom() < 11.5);
+  map.on('zoomend', zcls); zcls();
   map._home = b;
   /* لا نحدّث المقاس وهي مخفية (مقاس صفر يكسر الخريطة الحرارية) */
   new ResizeObserver(() => { if (el.clientWidth && el.clientHeight) map.invalidateSize(); }).observe(el);

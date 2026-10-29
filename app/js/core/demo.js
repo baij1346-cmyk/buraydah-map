@@ -1,4 +1,4 @@
-/* بيانات تجريبية للتدريب والتجربة: لقطات تقرير وهمية على ١٢٠ يوم بمحولات حقيقية من 511 */
+/* بيانات تجريبية للتدريب والتجربة: لقطات تقرير وهمية على 120 يوم بمحولات حقيقية من 511 */
 import { G } from './geo.js';
 import { DAY, HOUR, MIN } from './util.js';
 
@@ -23,7 +23,7 @@ export function demoSnapshots(nowT = Date.now(), seed = 7) {
   /* بلاغات مفتوحة الحين عشان تظهر غرفة العمليات */
   [15, 40, 65, 80, 95, 100, 115, 130, 190].forEach((m, k) => tickets.push({ task: String(id++), start: nowT - m * MIN, dur: 9999, tr: hot[k], center: k === 8 ? 'عنيزة' : 'بريدة', tech: k === 3 ? '' : techs[k], sup: sups[k % 3],
     sub: String(20000000 + k), acc: '3012345678' + k }));
-  /* لقطات كل ساعتين تقريبًا، وآخر وحدة قبل ٥ دقائق */
+  /* لقطات كل ساعتين تقريبًا، وآخر وحدة قبل 5 دقائق */
   const snaps = [];
   const times = []; for (let t = nowT - 121 * DAY; t <= nowT - HOUR; t += 2 * HOUR + Math.floor(rnd() * 40) * MIN) times.push(t);
   times.push(nowT - 5 * MIN);
