@@ -3,6 +3,7 @@ import * as repo from './store/repo.js';
 import { migrateOld } from './store/migrate.js';
 import { loadGeo } from './core/geo.js';
 import { readReport } from './sec/pdf.js';
+import { updatedAt } from './sec/reconcile.js';
 import { LV } from './core/const.js';
 import { toast, fmtDur, fmtTime, mins, now, esc } from './core/util.js';
 import { metrics, suggest, setLevel } from './core/levels.js';
@@ -79,12 +80,21 @@ async function importFiles(files) {
   for (const f of files) {
     toast('جاري قراءة ' + f.name + '…');
     try {
-      const r = await readReport(f);
-      if (!r.tickets.length) { out.push('<li>' + esc(f.name) + ': ما لقيت بلاغات. تأكد إنه تقرير توجيه البلاغات.</li>'); continue; }
-      const res = await repo.addSnapshot(r, f.name);
-      out.push('<li><b>' + esc(f.name) + '</b> — تحديث ' + fmtTime(res.at) + ': ' + res.count + ' بلاغ مفتوح' +
-        (res.dup ? ' (نفس التقرير مرفوع قبل، تم تحديثه)' : '') + (res.latest ? '' : ' · تقرير أقدم من آخر مرفوع، أُضيف للسجل') +
-        '<br>جديد: <b>' + res.added + '</b> · انقفل منذ التقرير السابق: <b>' + res.closed + '</b></li>');
+      const reps = await readReport(f);
+      if (!reps.length) { out.push('<li>' + esc(f.name) + ': ما لقيت بلاغات. تأكد إنه تقرير توجيه البلاغات.</li>'); continue; }
+      if (reps.length === 1) {
+        const res = await repo.addSnapshot(reps[0], f.name);
+        out.push('<li><b>' + esc(f.name) + '</b> — تحديث ' + fmtTime(res.at) + ': ' + res.count + ' بلاغ مفتوح' +
+          (res.dup ? ' (نفس التقرير مرفوع قبل، تم تحديثه)' : '') + (res.latest ? '' : ' · تقرير أقدم من آخر مرفوع، أُضيف للسجل') +
+          '<br>جديد: <b>' + res.added + '</b> · انقفل منذ التقرير السابق: <b>' + res.closed + '</b></li>');
+      } else {
+        /* ملف مجمّع: كل تقرير فيه لقطة مستقلة */
+        const before = repo.S.tickets.size, closedBefore = [...repo.S.tickets.values()].filter(t => t.closed).length;
+        await repo.addSnapshots(reps.map(r => Object.assign(r, { file: f.name })));
+        const ats = reps.map(r => updatedAt(r.updated)).filter(Boolean).sort((a, b) => a - b);
+        out.push('<li><b>' + esc(f.name) + '</b> — ملف مجمّع فيه <b>' + reps.length + '</b> تقرير (من ' + fmtTime(ats[0]) + ' إلى ' + fmtTime(ats[ats.length - 1]) + ')' +
+          '<br>بلاغات جديدة على المنصة: <b>' + (repo.S.tickets.size - before) + '</b> · انقفل: <b>' + ([...repo.S.tickets.values()].filter(t => t.closed).length - closedBefore) + '</b></li>');
+      }
     } catch (e) {
       console.error(e);
       out.push('<li>' + esc(f.name) + ': ' + (e.message === 'load' ? 'تحتاج إنترنت لقراءة PDF أول مرة' : 'تعذّرت قراءة الملف') + '</li>');

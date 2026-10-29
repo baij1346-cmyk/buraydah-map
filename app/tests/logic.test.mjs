@@ -59,3 +59,19 @@ test('hasr does not call everything "peak" when all data is from summer', () => 
   const r = analyze(F, DEF_RULES, now).find(x => x.tr === 'QBS-9');
   assert.ok(!r.acts.includes('reinforce'));
 });
+test('parser joins reversed Arabic letters and splits merged reports', async () => {
+  const { secGroupRows, secParseAll } = await import('../js/sec/parser.js');
+  /* "بريدة" مكتوبة حروف بالعكس: ة د ي ر ب */
+  const it = (s, x, y, w = 2) => ({ str: s, transform: [1, 0, 0, 1, x, y], width: w });
+  const letters = (word, x0, y) => [...word].reverse().map((c, i) => it(c, x0 + i * 2, y));
+  const page = (time, task) => [it('Last Update :', 10, 500, 30), it(time, 50, 500, 30),
+    it('1', 10, 400), it('0', 40, 400), it('1', 50, 400), it('30123456789', 60, 400, 25), it('12345678', 90, 400, 20), it('4100-QBS-066128', 120, 400, 30),
+    it('1:05', 200, 400, 8), it(task, 260, 400, 18), ...letters('بريدة', 300, 400)];
+  const reps = secParseAll([secGroupRows(page('29/10/26 14:41', '50000001')), secGroupRows(page('10/29/2026 18:20', '50000002'))]);
+  assert.equal(reps.length, 2);
+  assert.deepEqual(reps[0].updated, { d: 29, m: 10, y: 2026, h: 14, mi: 41 });
+  assert.deepEqual(reps[1].updated, { d: 29, m: 10, y: 2026, h: 18, mi: 20 });
+  assert.equal(reps[0].tickets[0].center, 'بريدة');
+  assert.equal(reps[1].tickets[0].tr, '4100-QBS-066128');
+  assert.equal(reps[1].tickets[0].mins, 65);
+});

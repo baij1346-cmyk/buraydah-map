@@ -18,7 +18,9 @@ export function reconcile(snapshots) {
     t.lastSeen = s.at; t.lastMins = r.mins;
     DETAIL_FIELDS.forEach(f => { if (r[f] !== undefined && r[f] !== '') t[f] = r[f]; });
     /* بداية البلاغ: وقت التقرير ناقص مدته. نأخذ الأقدم لأن المدة أحيانًا تتصفر عند إعادة التوجيه */
-    const st = s.at - r.mins * MIN;
+    /* وقت الفتح المكتوب في الصيغة الجديدة نستخدمه بس إذا يتوافق مع المدة (±٥ د)، وإلا نحسبه من المدة */
+    const op = r.opened ? new Date(r.opened.y, r.opened.m - 1, r.opened.d, r.opened.h, r.opened.mi).getTime() : null;
+    const st = op && Math.abs((s.at - op) / MIN - r.mins) <= 5 ? op : s.at - r.mins * MIN;
     t.start = t.start ? Math.min(t.start, st) : st;
   }));
   out.forEach(t => {
