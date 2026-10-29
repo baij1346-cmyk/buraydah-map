@@ -14,10 +14,10 @@ export function hbar(rows, { target, targetTxt, max } = {}) {
 export const DUR_COLS = ['#C6DBF7', '#79A8EE', '#2D6FD6', '#0B3A82'];
 export const DUR_LABELS = ['أقل من ساعة', '60–89 د', '90–119 د', '+120 د'];
 export function stack100(rows) {
-  const legend = '<div class="sk-lg">' + DUR_LABELS.map((l, i) => '<span><i style="background:' + DUR_COLS[i] + '"></i>' + l + '</span>').join('') + '</div>';
+  const legend = '<div class="sk-lg">' + DUR_LABELS.map((l, i) => '<span><i class="c' + i + '"></i>' + l + '</span>').join('') + '</div>';
   return legend + '<div class="sk">' + rows.map(r => {
     const tot = r.parts.reduce((a, b) => a + b, 0) || 1;
-    return '<div class="sk-row"><span class="sk-l">' + esc(r.label) + '</span><span class="sk-bar">' + r.parts.map((n, i) => n ? '<b style="flex:' + n + ';background:' + DUR_COLS[i] + '" title="' + esc(r.label + ' — ' + DUR_LABELS[i] + ': ' + n + ' (' + Math.round(100 * n / tot) + '%)') + '"></b>' : '').join('') +
+    return '<div class="sk-row"><span class="sk-l">' + esc(r.label) + '</span><span class="sk-bar">' + r.parts.map((n, i) => n ? '<b class="c' + i + '" style="flex:' + n + '" title="' + esc(r.label + ' — ' + DUR_LABELS[i] + ': ' + n + ' (' + Math.round(100 * n / tot) + '%)') + '"></b>' : '').join('') +
       '</span><span class="sk-v">' + tot + '</span></div>';
   }).join('') + '</div>';
 }

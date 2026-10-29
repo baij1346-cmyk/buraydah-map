@@ -2,7 +2,8 @@
 :root{
   --bg:#F3F5F7; --surface:#FFFFFF; --surface-2:#F7F8FA; --line:#E2E6EA; --line-2:#EDF0F3;
   --fg:#1B1F24; --muted:#5C6670; --faint:#8A939C;
-  --brand:#0B57D0; --brand-soft:#E8F0FE; --brand-ink:#0842A0;
+  --brand:#2A6BD6; --brand-soft:#E8F1FD; --brand-ink:#1A4FB0; --se-teal:#4CC3A9;
+  --bar:#B9D3F6; --bar-hi:var(--brand); --d0:#C6DBF7; --d1:#79A8EE; --d2:#2D6FD6; --d3:#0B3A82;
   --ok:#188038; --ok-soft:#E6F4EA; --warn:#A35C00; --warn-soft:#FEF4E0; --bad:#C5221F; --bad-soft:#FCE8E6; --crit:#7F1D1D;
   --b0:#F4A259; --b1:#E9B308; --b2:#DC2626; --b3:#7F1D1D;
   --p1:#D93025; --p2:#E8710A; --p3:#F9AB00; --p4:#1E8E3E;
@@ -28,7 +29,7 @@ a{color:var(--brand)}
 .bar{grid-area:1/1;background:var(--surface);border-bottom:1px solid var(--line);padding-block:calc(env(safe-area-inset-top,0px) + 10px) 10px;padding-inline:max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px;z-index:1002}
 .bar-row{display:flex;align-items:center;gap:10px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg);flex:none}
-.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0B57D0,#1A73E8);display:grid;place-items:center;color:#fff;box-shadow:0 2px 6px rgba(11,87,208,.35)}
+.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#1E4FBF 0%,#3A86EA 55%,#4CC3A9 100%);display:grid;place-items:center;color:#fff;box-shadow:0 2px 6px rgba(42,107,214,.35)}
 .logo svg{width:20px;height:20px}
 .brand-t{display:flex;flex-direction:column;line-height:1.2}
 .brand-t b{font-size:.98rem;font-weight:700}
@@ -42,7 +43,7 @@ a{color:var(--brand)}
 .fresh i{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
 .fresh.old i{background:#E9A23B;box-shadow:0 0 0 3px var(--warn-soft)}.fresh.stale i{background:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
 .fresh.none i{background:var(--faint);box-shadow:none}
-.up-btn{flex:none;display:inline-flex;align-items:center;gap:8px;height:38px;border-radius:999px;background:var(--brand);color:#fff;font-weight:600;font-size:.86rem;padding:0 16px;cursor:pointer;box-shadow:0 2px 6px rgba(11,87,208,.3);transition:background .15s}
+.up-btn{flex:none;display:inline-flex;align-items:center;gap:8px;height:38px;border-radius:999px;background:var(--brand);color:#fff;font-weight:600;font-size:.86rem;padding:0 16px;cursor:pointer;box-shadow:0 2px 6px rgba(42,107,214,.3);transition:background .15s}
 .up-btn:hover{background:var(--brand-ink)}
 .up-btn svg{width:18px;height:18px}
 .kpis{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
@@ -286,9 +287,9 @@ tr.sg td{background:var(--warn-soft);font-weight:700}
 .work ul{margin:0;padding-inline-start:20px;font-size:.84rem;line-height:1.85}
 .act{font-size:.72rem;font-weight:700;color:#fff;border-radius:6px;padding:2px 8px}
 .bars{display:flex;align-items:flex-end;gap:3px;height:120px;padding-top:8px}
-.bars div{flex:1;background:#AECBFA;border-radius:4px 4px 0 0;min-height:2px;position:relative}
-.bars div.rain{background:var(--brand)}
-.bars div:hover{background:#669DF6}
+.bars div{flex:1;background:var(--bar);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.bars div.rain{background:var(--bar-hi)}
+.bars div:hover{filter:brightness(.92)}
 .bars div:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translate(-50%,-4px);background:#1B1F24;color:#fff;font-size:.7rem;padding:3px 7px;border-radius:6px;white-space:nowrap}
 .days{display:flex;flex-wrap:wrap;gap:6px}
 .days button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:4px 10px;font-size:.8rem;cursor:pointer}
@@ -326,7 +327,7 @@ details.card summary{cursor:pointer;font-weight:700}
 .brief-head h3{font-size:1.1rem}
 
 /* ============ التقرير التنفيذي ============ */
-.rep-cover{background:linear-gradient(135deg,#0B2E6B 0%,#0B57D0 100%);color:#fff;border-radius:var(--r);padding:22px 24px;box-shadow:var(--sh)}
+.rep-cover{background:linear-gradient(135deg,#1E3F8F 0%,#2A6BD6 60%,#3FA9B8 100%);color:#fff;border-radius:var(--r);padding:22px 24px;box-shadow:var(--sh)}
 .rep-brand{display:flex;gap:16px;align-items:center}
 .rep-brand .logo{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.14);box-shadow:none;flex:none}
 .rep-brand .logo svg{width:26px;height:26px}
@@ -405,3 +406,23 @@ details.card summary{cursor:pointer;font-weight:700}
   .rep-cover{border-radius:10px}
   .bars div:hover::after{display:none}
 }
+
+/* ============ هوية PDC: الإحصائيات والتقرير التنفيذي ============ */
+.sk-bar b.c0,.sk-lg i.c0{background:var(--d0)}.sk-bar b.c1,.sk-lg i.c1{background:var(--d1)}.sk-bar b.c2,.sk-lg i.c2{background:var(--d2)}.sk-bar b.c3,.sk-lg i.c3{background:var(--d3)}
+.pdc{--brand:#5B8A1F;--brand-ink:#45701A;--brand-soft:#EEF5E1;--pdc-gray:#4A4A4A;--pdc-orange:#EE8F00;--pdc-green:#8DBE3C;
+  --bar:#F7D3A1;--bar-hi:#EE8F00;--d0:#DCEDBF;--d1:#A7CF5F;--d2:#6E9E2A;--d3:#3B5F12}
+.pdc .rep-cover{background:linear-gradient(135deg,#3A3A3A 0%,#555 60%,#6B6B6B 100%);position:relative;overflow:hidden;padding-bottom:26px}
+.pdc .rep-cover::after{content:"";position:absolute;inset-inline:0;bottom:0;height:6px;background:linear-gradient(90deg,#8DBE3C 0%,#C9B21E 50%,#EE8F00 100%)}
+.pdc .rep-brand .logo{background:linear-gradient(135deg,#EE8F00,#8DBE3C)}
+.pdc .rep-h>span{background:#EEF5E1;color:#45701A}
+.pdc .msgs{border-inline-start-color:#8DBE3C}
+.pdc .msgs li::marker{color:#5B8A1F}
+.pdc .hb-bar{background:#5A5A5A}
+.pdc .tbtn.primary{background:#4A4A4A;border-color:#4A4A4A}.pdc .tbtn.primary:hover{background:#333}
+.pdc .tbtn{color:#45701A}
+.pdc .seg button[aria-pressed="true"]{box-shadow:inset 0 -2px 0 #EE8F00,var(--sh)}
+.pdc .fl[aria-pressed="true"]{background:#EEF5E1;border-color:#CFE3A9;color:#45701A}
+.pdc .insights li::marker{color:#EE8F00}
+.pdc .kx{border-top-width:4px}
+.pdc .tbtn.primary{color:#fff}
+.pdc .hb-bar.warn{background:#C5221F}
