@@ -1,11 +1,11 @@
 /* 2) الإدارة: توجيه البلاغ للمقاول، متابعة الحالة، واتساب برسالة جاهزة، الاتجاهات، ضغط المقاولين */
-import { S } from '../store/repo.js';
+import { S, patchTickets } from '../store/repo.js';
 import { openFaults } from '../analysis/model.js';
 import { faultCard, bindCards, waLink } from '../core/ui.js';
 import { goto, pickTr, violationSheet } from './ops.js';
 import { COLORS, DIR, NEI, LV } from '../core/const.js';
 import { G } from '../core/geo.js';
-import { esc, fmtDur, fmtTime, mins, now, copy } from '../core/util.js';
+import { esc, fmtDur, fmtTime, mins, now, copy, armed, toast } from '../core/util.js';
 import { markUpdateSent } from '../core/levels.js';
 
 let root, filt = 'todo';
@@ -42,12 +42,20 @@ function render() {
   h += '<div class="tools"><a class="tbtn primary" id="mgWa" target="_blank" rel="noopener" href="' + waLink(summary(op)) + '">أرسل تحديث الحالة واتساب</a><button class="tbtn" id="mgCopy">نسخ التحديث</button></div>';
   /* القائمة */
   const fn = (FL.find(x => x[0] === filt) || FL[0])[2], fs = op.filter(fn).sort((a, b) => b.dur - a.dur);
+  const secOpen = op.filter(f => f.src === 'sec');
+  if (secOpen.length) h += '<div class="card"><div class="row"><div style="flex:1;min-width:200px"><b>إقفال البلاغات</b><p class="hint">كل بلاغ فيه زر «✓ تم الإصلاح». ولو خلص اليوم وما بترفع تقرير جديد، تقدر تقفل الكل مرة وحدة بوقت آخر تقرير ظهرت فيه.</p></div><button class="tbtn" id="mgCloseAll">إقفال كل المفتوح (' + secOpen.length + ')</button></div></div>';
   h += '<p class="sec-title">متابعة البلاغات</p><div class="filters">' + FL.map(([k, t, f]) => '<button class="fl" data-f="' + k + '" aria-pressed="' + (filt === k) + '">' + t + ' (' + op.filter(f).length + ')</button>').join('') + '</div>';
   h += fs.length ? '<div class="slist">' + fs.map(f => faultCard(f, { manage: true })).join('') + '</div>' : '<div class="empty">ما فيه بلاغات هنا.</div>';
   box.innerHTML = h;
   box.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { filt = b.dataset.f; render(); });
   box.querySelector('#mgWa').addEventListener('click', markUpdateSent);
   box.querySelector('#mgCopy').onclick = () => { copy(summary(op)); markUpdateSent(); };
+  const ca = box.querySelector('#mgCloseAll');
+  if (ca) armed(ca, 'إقفال كل المفتوح (' + secOpen.length + ')', async () => {
+    const ids = new Set(secOpen.map(f => f.id));
+    await patchTickets(t => { if (!ids.has(t.task)) return false; t.mclosed = t.lastSeen + 60000; return true; });
+    toast('تم إقفال ' + secOpen.length + ' بلاغ');
+  });
   bindCards(box, fs, { onGoto: goto, onPick: pickTr, onViol: violationSheet, rerender: render });
 }
 function summary(op) {

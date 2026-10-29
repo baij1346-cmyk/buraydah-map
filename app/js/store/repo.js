@@ -5,7 +5,7 @@ import { reconcile, updatedAt } from '../sec/reconcile.js';
 import { DEF_CO, DEF_RULES } from '../core/const.js';
 import { now } from '../core/util.js';
 
-const USER_FIELDS = ['cause', 'causeNote', 'st', 'ts', 'delay', 'note'];
+const USER_FIELDS = ['cause', 'causeNote', 'st', 'ts', 'delay', 'note', 'mclosed'];
 const DEF_SETTINGS = () => ({
   co: DEF_CO.map(x => x.slice()), tr: {}, zones: Array.from({ length: 9 }, () => ({ co: '', wa: '' })),
   sla: { 1: 30, 2: 60, 3: 120, 4: 240 }, rules: { ...DEF_RULES }, rainDays: {},

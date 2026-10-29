@@ -16,9 +16,12 @@ export const isPeak = t => S.settings.rules.peakMonths.includes(new Date(t).getM
 export function fromTicket(t) {
   const key = trKey(t), p = trLoc(key, S.settings.tr, t.center);
   const z = p ? zoneOf(p.lat, p.lng) : -1;
-  const live = t.closed ? t.dur : Math.round((now() - t.start) / MIN);
+  /* إقفال يدوي: يُعتمد إذا ما ظهر البلاغ في تقرير بعد وقت الإقفال (لو ظهر = انفتح من جديد) */
+  const manual = !t.closed && t.mclosed && t.mclosed >= t.lastSeen;
+  const closed = t.closed || manual, end = t.closed ? t.end : manual ? t.mclosed : null;
+  const live = t.closed ? t.dur : manual ? Math.round((t.mclosed - t.start) / MIN) : Math.round((now() - t.start) / MIN);
   return {
-    src: 'sec', id: t.task, ref: t, start: t.start, end: t.closed ? t.end : null, open: !t.closed,
+    src: 'sec', id: t.task, ref: t, start: t.start, end, open: !closed, manual, reopened: !t.closed && !!t.mclosed && t.mclosed < t.lastSeen,
     dur: live, uncertain: !!t.uncertain, center: t.center || '', tech: t.tech || '', sup: t.sup || '',
     co: company(t.tech), zone: z, tr: key, lat: p ? p.lat : null, lng: p ? p.lng : null, approx: p ? p.auto : false,
     cause: t.cause || '', acc: t.acc || '', sub: t.sub || '', affected: 1, repDay: t.repDay || 0, repYear: t.repYear || 0,

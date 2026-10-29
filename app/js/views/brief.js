@@ -24,7 +24,7 @@ export function analyzeDay(d) {
   const seen = new Set(snaps.flatMap(s => s.rows.map(r => r.task)));
   const F = faults({ from: t0 - 2 * DAY }).filter(f => f.src === 'sec' && seen.has(f.id));
   /* المدة: للمفتوح = عمره وقت آخر تقرير في اليوم (مو الحين) */
-  F.forEach(f => { if (f.open || f.end > t1) { f.open = true; f.dur = Math.round((t1 - f.start) / 60000); } });
+  F.forEach(f => { if (f.open || (f.end > t1 && !f.manual)) { f.open = true; f.dur = Math.round((t1 - f.start) / 60000); } });
   const centers = CENTERS.map(c => ({ c, r: row(c, F.filter(f => f.center === c)), over: F.filter(f => f.center === c && f.dur > 120).length })).filter(x => x.r.n);
   const all = row('القصيم', F); all.over = F.filter(f => f.dur > 120).length;
   /* الذروة بالساعة */

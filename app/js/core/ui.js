@@ -146,6 +146,8 @@ export function faultCard(f, { manage = false, showCause = false } = {}) {
     const idx = ST.findIndex(s => s[0] === f.st);
     ST.forEach((s, i) => { if (i) h += '<button class="st' + (i <= idx ? ' on' : '') + (i === idx + 1 ? ' next' : '') + '" data-st="' + s[0] + '">' + (i <= idx ? '✓ ' : '') + s[1] + '</button>'; });
   }
+  if (f.src === 'sec' && f.open) h += '<button class="st next" data-close>✓ تم الإصلاح</button>';
+  if (f.src === 'sec' && f.manual) h += '<span class="tagx">أُقفل يدويًا</span><button class="lnk" data-unclose>تراجع</button>';
   if (manage && f.src === 'sec' && f.open) {
     const cur = f.st || '';
     [['sent', 'تواصلت مع المقاول'], ['site', 'الفرقة في الموقع']].forEach(([k, t]) => h += '<button class="st' + (cur === k || (k === 'sent' && cur === 'site') ? ' on' : '') + '" data-sst="' + k + '">' + t + '</button>');
@@ -160,6 +162,24 @@ export function faultCard(f, { manage = false, showCause = false } = {}) {
   if (manage) h += '<button class="icon-btn" data-viol>تسجيل مخالفة</button>';
   h += '</div></article>';
   return h;
+}
+
+/* إقفال بلاغ من تقرير الكهرباء يدويًا: السبب + وقت الإصلاح */
+export function closeSheet_(f) {
+  const stale = Date.now() - f.ref.lastSeen > 2 * 3600000;
+  const sh = openSheet('<h2>إقفال البلاغ ' + esc(f.id) + '</h2><p class="hint">' + esc(f.center) + (f.co ? ' · ' + esc(f.co) : '') + (f.ref.tr ? ' · <span class="ltr">' + esc(f.ref.tr) + '</span>' : '') + '</p>' +
+    '<div><span class="lbl">سبب العطل</span>' + causeButtons(f.cause) + '</div>' +
+    '<div><span class="lbl">وقت الإصلاح</span><div class="seg" id="clT"><button data-t="now" aria-pressed="' + !stale + '">الحين (' + fmtTime(Date.now()) + ')</button><button data-t="seen" aria-pressed="' + stale + '">وقت آخر تقرير ظهر فيه (' + fmtTime(f.ref.lastSeen) + ')</button></div>' +
+    '<p class="hint" style="margin-top:6px">لو البلاغ قديم وما تعرف وقت إصلاحه، اختر «وقت آخر تقرير» عشان ما تتضخم المدة. ولو ظهر البلاغ في تقرير جاي، المنصة تفتحه من جديد تلقائيًا.</p></div>' +
+    '<div class="sheet-actions"><button class="tbtn primary" data-ok>إقفال</button><button class="tbtn" data-x>إلغاء</button></div>');
+  let cause = f.cause || '', when = stale ? 'seen' : 'now';
+  sh.querySelectorAll('[data-cause]').forEach(b => b.onclick = () => { cause = b.dataset.cause === cause ? '' : b.dataset.cause; sh.querySelectorAll('[data-cause]').forEach(x => x.setAttribute('aria-pressed', x.dataset.cause === cause)); });
+  sh.querySelectorAll('#clT button').forEach(b => b.onclick = () => { when = b.dataset.t; sh.querySelectorAll('#clT button').forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  sh.querySelector('[data-x]').onclick = closeSheet;
+  sh.querySelector('[data-ok]').onclick = async () => {
+    await updateTicket(f.id, { mclosed: when === 'now' ? Date.now() : f.ref.lastSeen + 60000, cause });
+    closeSheet(); toast('تم إقفال البلاغ ' + f.id);
+  };
 }
 
 /* ربط أزرار البطاقات داخل عنصر */
@@ -181,6 +201,8 @@ export function bindCards(root, list, { onGoto, onPick, onViol, rerender } = {})
       }
       setReportStatus(f.id, b.dataset.st);
     });
+    el.querySelectorAll('[data-close]').forEach(b => b.onclick = () => closeSheet_(f));
+    el.querySelectorAll('[data-unclose]').forEach(b => b.onclick = () => updateTicket(f.id, { mclosed: null }));
     el.querySelectorAll('[data-sst]').forEach(b => b.onclick = () => {
       const ts = Object.assign({}, f.ref.ts || {}); ts[b.dataset.sst] = ts[b.dataset.sst] || Date.now();
       updateTicket(f.id, { st: b.dataset.sst, ts });

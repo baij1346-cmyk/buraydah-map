@@ -11,7 +11,7 @@ const I = {
 let root;
 function mount(el) { root = el; el.innerHTML = '<div class="pad"><div class="more-list" id="moBody"></div></div>'; }
 function render() {
-  const nc = [...S.tickets.values()].filter(t => t.closed && !t.cause).length + S.reports.filter(r => r.st === 'done' && !r.cause).length;
+  const nc = [...S.tickets.values()].filter(t => (t.closed || (t.mclosed && t.mclosed >= t.lastSeen)) && !t.cause).length + S.reports.filter(r => r.st === 'done' && !r.cause).length;
   const L = [['review', 'المراجعة', nc ? nc + ' بلاغ مقفل بدون سبب' : 'البلاغات المقفلة، المتكرر، النقاط الساخنة'], ['control', 'الضبط', 'مخالفات المقاولين وتصدير المحضر'],
     ['plan', 'الخطة', 'المستويات، الأدوار، التجهيز، ملف الحدث'], ['settings', 'الإعدادات', 'المقاولين، المحولات، النسخ الاحتياطي']];
   root.querySelector('#moBody').innerHTML = L.map(([k, t, d]) => '<a href="#' + k + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + I[k] + '</svg><span>' + t + '<small>' + d + '</small></span></a>').join('') +
