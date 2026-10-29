@@ -104,7 +104,7 @@ function workCard(x, i) {
     '<div class="steps">' + (x.lat != null ? '<button class="icon-btn" data-go="' + x.lat + ',' + x.lng + '">على الخريطة' + (x.approx ? ' (تقريبي)' : '') + '</button>' : '<button class="icon-btn" data-pick="' + esc(x.tr) + '">📍 حدّد مكان المحول</button>') + '</div></div>';
 }
 function exportList(items) {
-  const rows = [['قائمة أعمال الشبكة — كهرباء بريدة'], ['الفترة', period ? 'آخر ' + period + ' يوم' : 'الكل', 'الأيام', KINDS.find(k => k[0] === kind)[1], 'تاريخ التصدير', new Date().toLocaleString('en-GB')], [],
+  const rows = [['قائمة أعمال الشبكة — مركز أبو بندر للعمليات'], ['الفترة', period ? 'آخر ' + period + ' يوم' : 'الكل', 'الأيام', KINDS.find(k => k[0] === kind)[1], 'تاريخ التصدير', new Date().toLocaleString('en-GB')], [],
     ['الترتيب', 'المحول', 'نوع العمل', 'الدرجة', 'المنطقة', 'المركز', 'عدد الأعطال', 'آخر 30 يوم', 'الاتجاه', 'المتأثرين', 'أعطال أيام المطر', 'الأسباب', 'الدليل (ليش؟)', 'خط العرض', 'خط الطول', 'رابط الموقع']];
   items.forEach((x, i) => rows.push([i + 1, trLabel(x.tr), x.acts.map(a => ACTIONS[a].t).join(' + ') || 'مراقبة', x.score, x.zone >= 0 ? G.ZS[x.zone].L : '', x.center, x.n, x.n30, TREND[x.trend], x.affected, x.rainN,
     Object.entries(x.causeCount).map(([k, n]) => causeName(k) + ' ' + n).join('، '), x.why.join(' | '), x.lat ?? '', x.lng ?? '', x.lat != null ? 'https://www.google.com/maps?q=' + x.lat + ',' + x.lng : '']));

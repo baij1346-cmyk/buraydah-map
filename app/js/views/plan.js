@@ -42,7 +42,7 @@ function render() {
   $('#pFile').onclick = () => exportFile(F, from);
 }
 function exportFile(F, from) {
-  const e = S.event, rows = [['ملف الحدث — كهرباء بريدة'], ['بداية الحدث', e.start ? new Date(e.start).toLocaleString('en-GB') : new Date(from).toLocaleString('en-GB')], ['نهاية الحدث', e.closedAt && !e.start ? new Date(e.closedAt).toLocaleString('en-GB') : 'مستمر'], [], ['سجل المستويات', 'الوقت', 'المستوى']];
+  const e = S.event, rows = [['ملف الحدث — مركز أبو بندر للعمليات'], ['بداية الحدث', e.start ? new Date(e.start).toLocaleString('en-GB') : new Date(from).toLocaleString('en-GB')], ['نهاية الحدث', e.closedAt && !e.start ? new Date(e.closedAt).toLocaleString('en-GB') : 'مستمر'], [], ['سجل المستويات', 'الوقت', 'المستوى']];
   e.log.forEach(x => rows.push(['', new Date(x.t).toLocaleString('en-GB'), x.level + ' — ' + LV[x.level].n]));
   rows.push([], ['الأدوار']); ROLES.forEach(([k, t]) => rows.push(['', t, S.settings.roles[k] || '']));
   rows.push([], ['المصدر', 'الرقم', 'البداية', 'النهاية', 'المدة (د)', 'المركز', 'المقاول', 'الفني', 'المشرف', 'المحول', 'السبب', 'سبب التأخير', 'ملاحظات', 'خط العرض', 'خط الطول']);

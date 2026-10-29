@@ -43,7 +43,7 @@ function render() {
 }
 function exportMinutes(V) {
   if (!V.length) return openSheet('<h2>تصدير للمحضر</h2><p class="hint">ما فيه مخالفات في الفترة المختارة.</p><button class="tbtn" data-x>تمام</button>').querySelector('[data-x]').onclick = closeSheet;
-  const rows = [['سجل مخالفات المقاولين — كهرباء بريدة'], ['الفترة', period ? 'آخر ' + period + ' يوم' : 'الكل', 'تاريخ التصدير', fmtDateTime(now())], []];
+  const rows = [['سجل مخالفات المقاولين — مركز أبو بندر للعمليات'], ['الفترة', period ? 'آخر ' + period + ' يوم' : 'الكل', 'تاريخ التصدير', fmtDateTime(now())], []];
   const cos = [...new Set(V.map(v => v.co))];
   rows.push(['الملخص']); rows.push(['المقاول', 'الإجمالي', ...VIOL.map(t => t.t)]);
   cos.forEach(c => rows.push([c, V.filter(v => v.co === c).length, ...VIOL.map(t => V.filter(v => v.co === c && v.type === t.k).length)]));

@@ -69,7 +69,7 @@ function render() {
   box.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { dim = b.dataset.d; render(); });
   box.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { if (sortK === b.dataset.s) sortDir = -sortDir; else { sortK = b.dataset.s; sortDir = -1; } render(); });
   box.querySelector('#stExp').onclick = () => {
-    const out = [['إحصائيات — كهرباء بريدة', 'من ' + isoDay(start) + ' إلى ' + isoDay(now()), center || 'كل المراكز'], [], [DIMS.find(d => d.k === dim).t, 'العدد', 'مفتوح', 'مقفل', 'متوسط المدة (د)', ...LIMITS.map(L => '% خلال ' + L + ' د'), 'بدون سبب']];
+    const out = [['إحصائيات — مركز أبو بندر للعمليات', 'من ' + isoDay(start) + ' إلى ' + isoDay(now()), center || 'كل المراكز'], [], [DIMS.find(d => d.k === dim).t, 'العدد', 'مفتوح', 'مقفل', 'متوسط المدة (د)', ...LIMITS.map(L => '% خلال ' + L + ' د'), 'بدون سبب']];
     [...rows, tot].forEach(r => out.push([dim === 'tr' && r.k !== 'بدون رقم' && r.k !== 'الإجمالي' ? trLabel(r.k) : r.k, r.n, r.open, r.closed, r.avg, ...r.within, r.noCause]));
     download('إحصائيات_' + dim + '_' + isoDay(now()) + '.csv', csv(out));
   };

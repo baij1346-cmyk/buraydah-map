@@ -36,7 +36,7 @@ function show(v) {
   const el = document.getElementById('v-' + v);
   if (!mounted.has(v)) { VIEWS[v].mount(el, app); mounted.add(v); }
   VIEWS[v].render();
-  document.title = el.dataset.title + ' — كهرباء بريدة';
+  document.title = el.dataset.title + ' — مركز أبو بندر للعمليات';
 }
 window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
 window.addEventListener('hashchange', () => show(location.hash.slice(1)));

@@ -60,7 +60,7 @@ function render() {
 }
 function summary(op) {
   const e = S.event, l = e.level || 1;
-  let s = '📊 تحديث الحالة — كهرباء بريدة\nالساعة ' + fmtTime(now()) + ' · المستوى ' + l + ' (' + LV[l].n + ')' + (e.start ? ' · منذ ' + fmtDur(mins(now() - e.start)) : '') + '\n\n';
+  let s = '📊 تحديث الحالة — مركز أبو بندر للعمليات\nالساعة ' + fmtTime(now()) + ' · المستوى ' + l + ' (' + LV[l].n + ')' + (e.start ? ' · منذ ' + fmtDur(mins(now() - e.start)) : '') + '\n\n';
   s += 'مفتوح: ' + op.length + ' | 90–119 د: ' + op.filter(f => f.dur >= 90 && f.dur < 120).length + ' | تجاوز ساعتين: ' + op.filter(f => f.dur >= 120).length + '\n';
   const cos = {}; op.forEach(f => { const k = f.co || 'غير محدد'; cos[k] = cos[k] || [0, 0]; cos[k][0]++; if (f.dur >= 90) cos[k][1]++; });
   if (Object.keys(cos).length) { s += '\nحسب المقاول:\n'; Object.entries(cos).sort((a, b) => b[1][0] - a[1][0]).forEach(([k, v]) => s += '• ' + k + ': ' + v[0] + (v[1] ? ' (' + v[1] + ' تجاوز 90 د)' : '') + '\n'); }
