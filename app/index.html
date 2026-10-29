@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="robots" content="noindex">
+<title>منصة الأحداث — كهرباء بريدة</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app">
+  <header class="bar">
+    <div class="bar-row">
+      <button class="lvl" id="lvlBtn" type="button">المستوى ١ — عادي</button>
+      <div class="ev"><span class="ev-sub" id="evSub"></span></div>
+      <label class="up-btn" for="pdfIn" title="رفع تقرير الكهرباء (PDF)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
+        <span>رفع التقرير</span><input type="file" id="pdfIn" accept=".pdf,application/pdf" hidden multiple>
+      </label>
+    </div>
+    <div class="kpis" id="kpis"></div>
+  </header>
+
+  <main class="views" id="views">
+    <section class="view" id="v-ops" data-title="غرفة العمليات"></section>
+    <section class="view" id="v-manage" data-title="الإدارة" hidden></section>
+    <section class="view" id="v-review" data-title="المراجعة" hidden></section>
+    <section class="view" id="v-control" data-title="الضبط" hidden></section>
+    <section class="view" id="v-hasr" data-title="الحصر" hidden></section>
+    <section class="view" id="v-stats" data-title="الإحصائيات" hidden></section>
+    <section class="view" id="v-plan" data-title="الخطة" hidden></section>
+    <section class="view" id="v-settings" data-title="الإعدادات" hidden></section>
+    <section class="view" id="v-more" data-title="المزيد" hidden></section>
+  </main>
+
+  <nav class="nav" id="nav" aria-label="الأقسام">
+    <a href="#ops" data-v="ops"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>العمليات<span class="badge-n" id="bOps" hidden></span></a>
+    <a href="#manage" data-v="manage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>الإدارة</a>
+    <a href="#review" data-v="review" class="wide-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>المراجعة<span class="badge-n" id="bReview" hidden></span></a>
+    <a href="#control" data-v="control" class="wide-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16h.01"/></svg>الضبط</a>
+    <a href="#hasr" data-v="hasr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" opacity=".5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>الحصر</a>
+    <a href="#stats" data-v="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>الإحصائيات</a>
+    <a href="#plan" data-v="plan" class="wide-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4h6v3H9zM6 6H5v15h14V6h-1"/><path d="M9 12h6M9 16h4"/></svg>الخطة</a>
+    <a href="#settings" data-v="settings" class="wide-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>الإعدادات</a>
+    <a href="#more" data-v="more" class="narrow-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>المزيد<span class="badge-n" id="bMore" hidden></span></a>
+  </nav>
+</div>
+<div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" hidden role="status"></div>
+<div class="boot" id="boot">جاري التحميل…</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
