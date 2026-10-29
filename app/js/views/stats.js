@@ -1,17 +1,26 @@
 /* 6) الإحصائيات: يومي/أسبوعي/شهري لكل مقاول ومركز ومشرف وفني ومحول */
 import { S } from '../store/repo.js';
+import brief from './brief.js';
 import { faults } from '../analysis/model.js';
 import { DIMS, LIMITS, table, row, daily, weekly } from '../analysis/stats.js';
 import { trLabel } from '../core/geo.js';
 import { CENTERS } from '../core/const.js';
 import { esc, fmtDur, DAY, now, csv, download, isoDay } from '../core/util.js';
 
-let root, period = 30, dim = 'co', center = 'بريدة', sortK = 'n', sortDir = -1;
+let root, mode = 'brief', period = 30, dim = 'co', center = 'بريدة', sortK = 'n', sortDir = -1;
 const PERIODS = [[1, 'اليوم'], [7, 'أسبوع'], [30, 'شهر'], [90, '3 أشهر'], [365, 'سنة']];
 
-function mount(el) { root = el; el.innerHTML = '<div class="pad" id="stBody"></div>'; }
+function mount(el) {
+  root = el;
+  el.innerHTML = '<div class="pad" style="padding-bottom:0"><div class="seg" id="stMode"><button data-m="brief">ملخص اليوم</button><button data-m="detail">تفصيلي حسب الفترة</button></div></div><div id="stBrief"></div><div class="pad" id="stBody"></div>';
+  el.querySelectorAll('#stMode button').forEach(b => b.onclick = () => { mode = b.dataset.m; render(); });
+  brief.mount(el.querySelector('#stBrief'));
+}
 function render() {
   if (!root) return;
+  root.querySelectorAll('#stMode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === mode));
+  root.querySelector('#stBrief').hidden = mode !== 'brief'; root.querySelector('#stBody').hidden = mode === 'brief';
+  if (mode === 'brief') return brief.render();
   const start = period === 1 ? new Date(new Date().setHours(0, 0, 0, 0)).getTime() : now() - period * DAY;
   const F = faults({ from: start, center }), box = root.querySelector('#stBody');
   const tot = row('الإجمالي', F);

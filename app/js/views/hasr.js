@@ -4,6 +4,7 @@ import { faults } from '../analysis/model.js';
 import { analyze, ACTIONS, byZone, suggestRainDays } from '../analysis/hasr.js';
 import { makeMap, zoneChip } from '../core/ui.js';
 import { pickTr } from './ops.js';
+import { hotspotsHtml, latestDay } from './brief.js';
 import { trLabel, G } from '../core/geo.js';
 import { COLORS, causeName } from '../core/const.js';
 import { esc, fmtDate, DAY, now, csv, download, isoDay, pct } from '../core/util.js';
@@ -50,6 +51,9 @@ function render() {
     (closed && pct(withCause, closed) < 60 ? '<p class="hint">⚠️ دقة التصنيف تعتمد على تسجيل سبب العطل. سجّل الأسباب من «المراجعة».</p>' : '') +
     (F.length && pct(located, F.length) < 60 ? '<p class="hint">⚠️ كثير من المحولات بدون موقع. ارفع قائمة المحولات من GIS في «الإعدادات» أو حدّد المكان يدويًا.</p>' : '') +
     (withTr < F.length ? '<p class="hint">' + (F.length - withTr) + ' عطل بدون رقم محول، ما تدخل في الترتيب.</p>' : '') + '</div>';
+  /* النقاط الساخنة في آخر يوم مرفوع */
+  const ld = latestDay();
+  if (ld) { const dayF = FA.filter(f => isoDay(f.start) === ld || (f.end && isoDay(f.end) === ld)); const hs = hotspotsHtml(dayF, ''); if (hs) h += hs.replace('النقاط الساخنة', 'النقاط الساخنة في آخر يوم (' + ld + ')'); }
   /* المناطق */
   const z = byZone(F);
   if (z.some(q => q.n)) h += '<p class="sec-title">حسب المنطقة</p><div class="cgrid">' + z.map(q => '<div class="cc"><span class="ct" style="background:' + COLORS[q.zone] + '">' + G.ZS[q.zone].L + '</span><b>' + q.n + '</b><span>' + q.trs.size + ' محول' + (q.rain ? ' · ' + q.rain + ' مطر' : '') + '</span></div>').join('') + '</div>';

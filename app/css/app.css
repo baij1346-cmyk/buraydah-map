@@ -316,3 +316,11 @@ details.card summary{cursor:pointer;font-weight:700}
 .bars div{max-width:56px}
 .bars{justify-content:center}
 @media (max-width:520px){.cos{grid-template-columns:1fr 1fr}.co{padding:10px}.co b{font-size:1.2rem}}
+.insights{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px;font-size:.88rem;line-height:1.75}
+.insights li::marker{color:var(--brand)}
+.insights li.r::marker{color:var(--bad)}.insights li.g::marker{color:var(--ok)}
+.kgrid.big{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.kgrid.big b{font-size:1.5rem}
+.kgrid div.r{background:var(--bad-soft);border-color:#F5C6C3}.kgrid div.r b{color:var(--bad)}
+.kgrid div.w{background:var(--warn-soft);border-color:#F8E3BD}.kgrid div.w b{color:var(--warn)}
+.brief-head h3{font-size:1.1rem}
