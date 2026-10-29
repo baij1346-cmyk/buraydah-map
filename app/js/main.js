@@ -118,6 +118,23 @@ async function importFiles(files) {
 }
 document.getElementById('pdfIn').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) importFiles(fs); });
 
+/* ---------- بيانات منشورة مع الموقع (data/seed) تنضاف مرة وحدة لكل جهاز ---------- */
+async function loadSeeds() {
+  try {
+    const list = await fetch('./data/seed/index.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : []);
+    const done = repo.S.settings.seeds || {};
+    for (const file of list) {
+      if (done[file]) continue;
+      const d = await fetch('./data/seed/' + file).then(r => r.json());
+      /* التقارير المرفوعة من قبل على هالجهاز (بالأسماء الكاملة) ما نستبدلها بالنسخة المنشورة */
+      const have = new Set(repo.S.snapshots.map(x => x.at)), fresh = d.reports.filter(r => !have.has(updatedAt(r.updated)));
+      if (fresh.length) await repo.addSnapshots(fresh.map(r => Object.assign(r, { file: d.label })));
+      done[file] = true; repo.S.settings.seeds = done; await repo.saveSettings();
+      toast('تمت إضافة ' + d.label);
+    }
+  } catch (e) { console.warn('seed', e); }
+}
+
 /* ---------- التشغيل ---------- */
 (async () => {
   const boot = document.getElementById('boot');
@@ -134,6 +151,7 @@ document.getElementById('pdfIn').addEventListener('change', e => { const fs = [.
     return;
   }
   boot.remove();
+  loadSeeds();
   repo.onChange(() => { renderBar(); if (mounted.has(cur)) VIEWS[cur].render(); });
   renderBar(); show(location.hash.slice(1) || 'ops');
   setInterval(() => { renderBar(); if (mounted.has(cur) && VIEWS[cur].tick !== false) VIEWS[cur].render(); }, 60000);
