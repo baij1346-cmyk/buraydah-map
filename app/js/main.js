@@ -136,6 +136,21 @@ async function loadSeeds() {
   } catch (e) { console.warn('seed', e); }
 }
 
+/* ---------- تنبيه: المتصفح ما يحفظ البيانات ---------- */
+async function storageCheck() {
+  const ua = navigator.userAgent || '', inApp = /FBAN|FBAV|Instagram|Line\/|WhatsApp|Snapchat|Telegram|TwitterAndroid|; wv\)/i.test(ua);
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  let persisted = true;
+  try { if (navigator.storage && navigator.storage.persist) persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist()); } catch (e) { }
+  /* تنبيه التطبيقات يتكرر كل جلسة، والتنبيه العام مرة وحدة بس */
+  let dismissed = false; try { dismissed = inApp ? sessionStorage.getItem('warn-x') === '1' : localStorage.getItem('warn-x') === '1'; } catch (e) { }
+  if (standalone || dismissed || (!inApp && persisted)) return;
+  const w = document.getElementById('warnbar');
+  w.innerHTML = '<b>⚠️ ' + (inApp ? 'فاتح المنصة من داخل تطبيق (واتساب/تيليجرام)' : 'المتصفح ممكن يمسح بياناتك') + '</b><span>' + (inApp ? 'بياناتك تنمسح أول ما تقفل. افتح الرابط في Safari أو Chrome، أو أضفه للشاشة الرئيسية.' : 'عشان ما تضيع: أضف المنصة للشاشة الرئيسية (مشاركة ← إضافة إلى الشاشة الرئيسية)، وخذ نسخة احتياطية من الإعدادات.') + '</span><button type="button" aria-label="إغلاق">✕</button>';
+  w.hidden = false;
+  w.querySelector('button').onclick = () => { w.hidden = true; try { (inApp ? sessionStorage : localStorage).setItem('warn-x', '1'); } catch (e) { } };
+}
+
 /* ---------- التشغيل ---------- */
 (async () => {
   const boot = document.getElementById('boot');
@@ -152,7 +167,7 @@ async function loadSeeds() {
     return;
   }
   boot.remove();
-  loadSeeds();
+  loadSeeds(); storageCheck();
   repo.onChange(() => { renderBar(); if (mounted.has(cur)) VIEWS[cur].render(); });
   renderBar(); show(location.hash.slice(1) || 'ops');
   setInterval(() => { renderBar(); if (mounted.has(cur) && VIEWS[cur].tick !== false) VIEWS[cur].render(); }, 60000);
