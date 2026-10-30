@@ -166,6 +166,12 @@ async function storageCheck() {
     boot.innerHTML = 'تعذّر التشغيل.<br>' + (e.message === 'leaflet' ? 'تأكد من الاتصال بالإنترنت ثم حدّث الصفحة.' : 'المتصفح ما يدعم التخزين، أو الصفحة مفتوحة في وضع التصفح الخاص.');
     return;
   }
+  /* تصفير الأعطال مرة وحدة على كل جهاز (طلب رئيس القسم 30 أكتوبر). لتصفير جديد: زد الرقم */
+  const RESET_V = 1;
+  if ((repo.S.settings.faultsResetV || 0) < RESET_V) {
+    if (repo.S.snapshots.length || repo.S.reports.length) { await repo.resetFaults(); setTimeout(() => toast('تم تصفير الأعطال. الإعدادات والمقاولين باقية'), 700); }
+    repo.S.settings.faultsResetV = RESET_V; await repo.saveSettings();
+  }
   boot.remove();
   loadSeeds(); storageCheck();
   repo.onChange(() => { renderBar(); if (mounted.has(cur)) VIEWS[cur].render(); });

@@ -120,6 +120,13 @@ export async function restore(b) {
     db.putMany('snapshots', S.snapshots), db.putMany('tickets', [...S.tickets.values()]), db.putMany('reports', S.reports), db.putMany('violations', S.violations)]);
   emit();
 }
+/* تصفير الأعطال: يمسح التقارير والبلاغات ويبقي الإعدادات والمقاولين والأهداف والمخالفات */
+export async function resetFaults() {
+  await Promise.all(['snapshots', 'tickets', 'reports'].map(db.clear));
+  S.snapshots = []; S.tickets = new Map(); S.reports = [];
+  S.event = { level: 1, start: null, closedAt: null, log: [] }; await saveKV('event', S.event);
+  emit();
+}
 export async function wipeAll() {
   await Promise.all(['snapshots', 'tickets', 'reports', 'violations', 'kv'].map(db.clear));
   Object.assign(S, { settings: DEF_SETTINGS(), event: DEF_EVENT(), seq: 1, snapshots: [], tickets: new Map(), reports: [], violations: [] });

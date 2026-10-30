@@ -34,7 +34,7 @@ function render() {
       snaps.slice(0, 300).map(s => '<tr><td>' + fmtDateTime(s.at) + '</td><td class="n">' + s.rows.length + '</td><td style="font-size:.75rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(s.file) + '</td><td><button class="lnk" data-del="' + esc(s.id) + '">حذف</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="hint">ما فيه تقارير مرفوعة. استخدم زر «رفع التقرير» أعلى الشاشة. تقدر ترفع أكثر من ملف مرة وحدة.</p>') + '</div>';
   h += '<p class="sec-title">البيانات والنسخ الاحتياطي</p><div class="card"><p class="hint">كل البيانات محفوظة في هذا الجهاز فقط (قاعدة بيانات المتصفح). خذ نسخة احتياطية بشكل دوري، وانقلها لجهاز ثاني بـ«استرجاع نسخة».</p><div class="tools">' +
     '<button class="tbtn primary" id="seBak">حفظ نسخة احتياطية</button><label class="tbtn" for="seRes">استرجاع نسخة<input type="file" id="seRes" accept=".json" hidden></label>' +
-    '<button class="tbtn" id="seDemo">تحميل بيانات تجريبية</button><button class="tbtn danger" id="seWipe">مسح كل البيانات</button></div>' +
+    '<button class="tbtn danger" id="seReset">تصفير الأعطال</button><button class="tbtn" id="seDemo">تحميل بيانات تجريبية</button><button class="tbtn danger" id="seWipe">مسح كل البيانات</button></div>' +
     '<p class="hint">⚠️ رابط المنصة عام، وملفات أرقام العدادات ومواقعها منشورة معه. قبل ما توزّع الرابط على أحد، نحتاج نضيف تسجيل دخول (المرحلة الثانية).</p></div>';
   h += '<p class="hint" style="text-align:center">الإصدار 2 · <a href="' + ROOT + 'map.html">خريطة المقاولين</a></p>';
   root.querySelector('#seBody').innerHTML = h;
@@ -64,6 +64,7 @@ function render() {
     const f = e.target.files[0]; if (!f) return; e.target.value = '';
     try { await repo.restore(JSON.parse(await f.text())); toast('تم الاسترجاع'); } catch (x) { toast('الملف غير صالح. لازم يكون نسخة من هذي المنصة.'); }
   };
+  armed($('#seReset'), 'تصفير الأعطال', async () => { await repo.resetFaults(); toast('تم تصفير الأعطال. الإعدادات والمقاولين باقية'); });
   $('#seDemo').onclick = loadDemo;
   armed($('#seWipe'), 'مسح كل البيانات', async () => { await repo.wipeAll(); toast('تم مسح كل البيانات من الجهاز'); });
 }
