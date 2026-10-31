@@ -25,6 +25,10 @@ export async function init() {
   S.settings.rules = Object.assign({ ...DEF_RULES }, S.settings.rules || {});
   /* كلمات مقاولين جديدة تنضاف لقائمة المستخدم بدون ما تمس تعديلاته */
   DEF_CO.forEach(([k, l]) => { if (!S.settings.co.some(x => x[0] === k)) S.settings.co.push([k, l]); });
+  /* تصحيح اسم المقاول: الشرهان (مو الشهراني) */
+  S.settings.co.forEach(x => { if (x[1] === 'الشهراني') x[1] = 'الشرهان'; });
+  if (S.settings.zonesTable && S.settings.zonesTable['الشهراني']) { S.settings.zonesTable['الشرهان'] = S.settings.zonesTable['الشهراني']; delete S.settings.zonesTable['الشهراني']; }
+  S.settings.zones.forEach(z => { if (z.co === 'الشهراني') z.co = 'الشرهان'; });
   if (!Array.isArray(S.settings.exclude)) S.settings.exclude = [...DEF_EXCLUDE];
   if (!S.settings.scopeV) { S.settings.onlyBuraydah = true; S.settings.scopeV = 1; } /* النطاق صار بريدة فقط افتراضيًا */
   if (!S.settings.zonesTable) S.settings.zonesTable = JSON.parse(JSON.stringify(DEF_ZONES_TABLE));
