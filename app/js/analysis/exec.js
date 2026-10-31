@@ -46,6 +46,7 @@ export function keyMessages(A, focus, T) {
   out.push('أُغلق <b>' + pct(a.closed, a.n) + '%</b> من ' + a.n + ' بلاغ خلال ' + spanTxt(A) + '، بمتوسط <b>' + fmtDur(a.avg) + '</b>؛ ونسبة الإغلاق خلال ساعة <b>' + a.within[0] + '%</b> مقابل هدف ' + T.w60 + '%' + (w60.s === 'g' ? ' (محقق).' : '.'));
   const ok = A.centers.filter(x => x.r.closed >= 5).sort((x, y) => y.r.avg - x.r.avg);
   if (ok.length > 1) out.push('<b>' + ok[0].c + '</b> هو المركز الأبطأ (' + fmtDur(ok[0].r.avg) + ') مقابل ' + ok[ok.length - 1].c + ' (' + fmtDur(ok[ok.length - 1].r.avg) + ')' + (A.peak && A.peak.x >= 1.5 ? '، والضغط تركّز بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b> بـ' + A.peak.x + '× المعدل.' : '.'));
+  else if (A.peak && A.peak.x >= 1.5) out.push('الضغط تركّز بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b>: حوالي ' + A.peak.perHour + ' بلاغ بالساعة، يعني <b>' + A.peak.x + '×</b> باقي اليوم.');
   const exposed = A.F.filter(f => f.dur > 180).length, near = A.F.filter(f => f.open && f.dur >= 150 && f.dur <= 180).length;
   out.push(exposed ? '<b>' + exposed + ' بلاغ تجاوز 3 ساعات</b> (تعرّض نظامي)' + (near ? ' و' + near + ' بلاغ مفتوح قريب من الحد' : '') + '؛ يلزم توثيق سبب التأخير لكل منها خلال 5 أيام عمل.'
     : near ? '<b>' + near + ' بلاغ مفتوح قريب من حد الـ3 ساعات</b> — أولوية فورية.' : 'ما فيه أي بلاغ تجاوز المعيار النظامي (3 ساعات) ✓');

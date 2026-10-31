@@ -33,7 +33,7 @@ function render() {
     [['w60', 'نسبة الإغلاق خلال ساعة (%)'], ['w120', 'نسبة الإغلاق خلال ساعتين (%)'], ['w180', 'نسبة الإغلاق خلال 3 ساعات (%)'], ['avg', 'أقصى متوسط لمدة الإغلاق (دقيقة)'], ['over180', 'أقصى عدد بلاغات تتجاوز 3 ساعات']]
       .map(([k, t]) => '<div class="prow"><label for="tg_' + k + '">' + t + '</label><input id="tg_' + k + '" class="inp sm" type="number" min="0" data-tg="' + k + '" value="' + TG[k] + '"></div>').join('') + '</div>';
   h += '<p class="sec-title">عام</p><div class="card">' +
-    '<label class="chk"><input type="checkbox" id="seOnly"' + (p.onlyBuraydah ? ' checked' : '') + '> <span>غرفة العمليات: اعرض بلاغات مركز بريدة فقط</span></label>' + '</div>';
+    '<label class="chk"><input type="checkbox" id="seOnly"' + (p.onlyBuraydah ? ' checked' : '') + '> <span><b>بريدة فقط</b> — كل الأقسام تعرض بلاغات مركز بريدة بس (شيل العلامة لعرض القصيم كامل)</span></label>' + '</div>';
   h += '<p class="sec-title">تقارير الكهرباء المرفوعة <small>' + snaps.length + ' تقرير</small></p><div class="card">' +
     (snaps.length ? '<div class="tbl-wrap" style="max-height:280px;overflow:auto;box-shadow:none"><table class="dtable"><thead><tr><th>وقت التحديث</th><th class="n">بلاغات</th><th>الملف</th><th></th></tr></thead><tbody>' +
       snaps.slice(0, 300).map(s => '<tr><td>' + fmtDateTime(s.at) + '</td><td class="n">' + s.rows.length + '</td><td style="font-size:.75rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(s.file) + '</td><td><button class="lnk" data-del="' + esc(s.id) + '">حذف</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="hint">ما فيه تقارير مرفوعة. استخدم زر «رفع التقرير» أعلى الشاشة. تقدر ترفع أكثر من ملف مرة وحدة.</p>') + '</div>';

@@ -9,7 +9,7 @@ const USER_FIELDS = ['cause', 'causeNote', 'st', 'ts', 'delay', 'note', 'mclosed
 const DEF_SETTINGS = () => ({
   co: DEF_CO.map(x => x.slice()), tr: {}, zones: Array.from({ length: 9 }, () => ({ co: '', wa: '' })),
   sla: { 1: 30, 2: 60, 3: 120, 4: 240 }, rules: { ...DEF_RULES }, rainDays: {},
-  baseline: 15, wx: 'none', roles: {}, checks: {}, lastUpd: null, exclude: [...DEF_EXCLUDE], zonesTable: JSON.parse(JSON.stringify(DEF_ZONES_TABLE))
+  baseline: 15, wx: 'none', roles: {}, checks: {}, lastUpd: null, exclude: [...DEF_EXCLUDE], onlyBuraydah: true, zonesTable: JSON.parse(JSON.stringify(DEF_ZONES_TABLE))
 });
 const DEF_EVENT = () => ({ level: 1, start: null, closedAt: null, log: [] });
 
@@ -26,6 +26,7 @@ export async function init() {
   /* كلمات مقاولين جديدة تنضاف لقائمة المستخدم بدون ما تمس تعديلاته */
   DEF_CO.forEach(([k, l]) => { if (!S.settings.co.some(x => x[0] === k)) S.settings.co.push([k, l]); });
   if (!Array.isArray(S.settings.exclude)) S.settings.exclude = [...DEF_EXCLUDE];
+  if (!S.settings.scopeV) { S.settings.onlyBuraydah = true; S.settings.scopeV = 1; } /* النطاق صار بريدة فقط افتراضيًا */
   if (!S.settings.zonesTable) S.settings.zonesTable = JSON.parse(JSON.stringify(DEF_ZONES_TABLE));
   S.event = Object.assign(DEF_EVENT(), K.event || {});
   S.seq = K.seq || 1;
