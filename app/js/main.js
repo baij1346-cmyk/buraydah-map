@@ -65,7 +65,7 @@ function renderBar() {
   const op = openFaults(), b90 = op.filter(f => f.dur >= 90 && f.dur < 120).length, b120 = op.filter(f => f.dur >= 120).length;
   const day0 = new Date().setHours(0, 0, 0, 0), today = faults({ from: day0 - 86400000 }).filter(f => !f.open && f.end >= day0);
   const avgToday = today.length ? Math.round(today.reduce((a, f) => a + f.dur, 0) / today.length) : null;
-  const noCause = [...repo.S.tickets.values()].filter(t => (t.closed || (t.mclosed && t.mclosed >= t.lastSeen)) && !t.cause).length + repo.S.reports.filter(r => r.st === 'done' && !r.cause).length;
+  const noCause = faults().filter(f => !f.open && !f.cause).length;
   document.getElementById('kpis').innerHTML =
     kpi(op.length, 'مفتوح', '', 'ops') + kpi(b90, '90–119 د', b90 ? 'warn' : '', 'ops') + kpi(b120, 'تجاوز ساعتين', b120 ? 'alert' : '', 'ops') +
     (m.mv ? kpi(m.mv, 'فصل مغذي', 'alert', 'manage') : '') + kpi(today.length, 'انقفل اليوم', '', 'stats') +

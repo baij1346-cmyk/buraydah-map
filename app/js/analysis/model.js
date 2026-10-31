@@ -42,6 +42,7 @@ export function fromReport(r) {
 }
 export function faults({ from = 0, to = Infinity, center = '' } = {}) {
   const a = [...S.tickets.values()].map(fromTicket).concat(S.reports.map(fromReport));
-  return a.filter(f => f.start >= from && f.start < to && (!center || f.center === center));
+  const ex = S.settings.exclude || [];
+  return a.filter(f => f.start >= from && f.start < to && (!center || f.center === center) && !ex.includes(f.co));
 }
 export const openFaults = () => faults().filter(f => f.open);

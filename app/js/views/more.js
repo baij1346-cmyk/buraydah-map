@@ -1,6 +1,7 @@
 /* قائمة «المزيد» للجوال */
 import { S } from '../store/repo.js';
 import { ROOT } from '../core/ui.js';
+import { faults } from '../analysis/model.js';
 const I = {
   review: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
   control: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16h.01"/>',
@@ -11,7 +12,7 @@ const I = {
 let root;
 function mount(el) { root = el; el.innerHTML = '<div class="pad"><div class="more-list" id="moBody"></div></div>'; }
 function render() {
-  const nc = [...S.tickets.values()].filter(t => (t.closed || (t.mclosed && t.mclosed >= t.lastSeen)) && !t.cause).length + S.reports.filter(r => r.st === 'done' && !r.cause).length;
+  const nc = faults().filter(f => !f.open && !f.cause).length;
   const L = [['review', 'المراجعة', nc ? nc + ' بلاغ مقفل بدون سبب' : 'البلاغات المقفلة، المتكرر، النقاط الساخنة'], ['control', 'الضبط', 'مخالفات المقاولين وتصدير المحضر'],
     ['plan', 'الخطة', 'المستويات، الأدوار، التجهيز، ملف الحدث'], ['settings', 'الإعدادات', 'المقاولين، المحولات، النسخ الاحتياطي']];
   root.querySelector('#moBody').innerHTML = L.map(([k, t, d]) => '<a href="#' + k + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + I[k] + '</svg><span>' + t + '<small>' + d + '</small></span></a>').join('') +

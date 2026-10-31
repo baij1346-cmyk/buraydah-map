@@ -21,6 +21,11 @@ function render() {
       '<input class="inp sm ltr" style="width:150px" data-zwa="' + i + '" inputmode="numeric" placeholder="9665…" value="' + esc(p.zones[i].wa) + '"></div>').join('') + '</div>';
   h += '<p class="sec-title">ربط الفنيين بالمقاولين</p><div class="card"><p class="hint">كل سطر: كلمة تظهر في اسم الفني بتقرير الكهرباء = اسم المقاول. مثال: <b>السندس = أعمال السندس</b></p>' +
     '<textarea class="cobox" id="seCo" aria-label="كلمات المقاولين">' + esc(p.co.map(([k, l]) => k === l ? k : k + ' = ' + l).join('\n')) + '</textarea></div>';
+  const known = [...new Set(p.co.map(x => x[1]))];
+  h += '<p class="sec-title">المقاولين المستبعدين <small>بلاغاتهم ما تدخل في المنصة</small></p><div class="card"><p class="hint">اضغط على المقاول لاستبعاده أو إرجاعه. المستبعد ما يظهر في العمليات ولا الإحصائيات ولا التقرير التنفيذي.</p><div class="causes">' +
+    known.map(c => '<button type="button" data-ex="' + esc(c) + '" aria-pressed="' + p.exclude.includes(c) + '">' + (p.exclude.includes(c) ? '✕ ' : '') + esc(c) + '</button>').join('') + '</div></div>';
+  h += '<p class="sec-title">توزيع الزونات على المقاولين <small>مرجع — خلال 24 ساعة</small></p><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المقاول</th><th>الزونات</th><th class="n">العدد</th></tr></thead><tbody>' +
+    Object.entries(p.zonesTable).map(([c, zs]) => '<tr' + (p.exclude.includes(c) ? ' class="muted"' : '') + '><td><b>' + esc(c) + '</b>' + (p.exclude.includes(c) ? ' <span class="tagx">مستبعد</span>' : '') + '</td><td class="ltr" style="text-align:right">' + zs.slice().sort((a, b) => a - b).join('، ') + '</td><td class="n">' + zs.length + '</td></tr>').join('') + '</tbody></table></div>';
   h += '<p class="sec-title">مواقع المحولات <small>' + nTr + ' محفوظ</small></p><div class="card"><p class="hint">ارفع ملف CSV من GIS فيه ثلاث أعمدة: رقم المحول (مثل 4100-QBS-066128)، خط العرض، خط الطول. بعدها كل بلاغ يطلع على الخريطة ويدخل في الحصر بدقة. بدونه المنصة تستخدم موقع تقريبي من 511 (يطابق تقريبًا نص محولات بريدة).</p>' +
     '<div class="tools"><label class="tbtn primary" for="seTr">رفع قائمة المحولات (CSV)<input type="file" id="seTr" accept=".csv,.txt" hidden></label><button class="tbtn" id="seTrExp">تصدير المواقع المحفوظة</button></div></div>';
   const TG = Object.assign({ ...DEF_TARGETS }, p.targets || {});
@@ -43,6 +48,7 @@ function render() {
   root.querySelectorAll('[data-zwa]').forEach(i => i.onchange = () => { p.zones[+i.dataset.zwa].wa = arDigits(i.value).replace(/\D/g, '').replace(/^0+/, '').replace(/^5/, '9665'); i.value = p.zones[+i.dataset.zwa].wa; saveSettings(); });
   $('#seCo').onchange = e => { p.co = e.target.value.split('\n').map(s => s.trim()).filter(Boolean).map(s => { const [k, l] = s.split('=').map(x => x.trim()); return [k, l || k]; }); saveSettings(); toast('تم الحفظ'); };
   root.querySelectorAll('[data-tg]').forEach(i => i.onchange = () => { const v = parseFloat(i.value); if (v >= 0) { p.targets = Object.assign({ ...DEF_TARGETS }, p.targets || {}, { [i.dataset.tg]: v }); saveSettings(); } });
+  root.querySelectorAll('[data-ex]').forEach(b => b.onclick = () => { const c = b.dataset.ex; p.exclude = p.exclude.includes(c) ? p.exclude.filter(x => x !== c) : [...p.exclude, c]; saveSettings(); });
   $('#seOnly').onchange = e => { p.onlyBuraydah = e.target.checked; saveSettings(); };
   $('#seTr').onchange = async e => {
     const f = e.target.files[0]; if (!f) return; e.target.value = '';
