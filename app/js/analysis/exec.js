@@ -47,11 +47,21 @@ export function keyMessages(A, focus, T) {
   const ok = A.centers.filter(x => x.r.closed >= 5).sort((x, y) => y.r.avg - x.r.avg);
   if (ok.length > 1) out.push('<b>' + ok[0].c + '</b> هو المركز الأبطأ (' + fmtDur(ok[0].r.avg) + ') مقابل ' + ok[ok.length - 1].c + ' (' + fmtDur(ok[ok.length - 1].r.avg) + ')' + (A.peak && A.peak.x >= 1.5 ? '، والضغط تركّز بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b> بـ' + A.peak.x + '× المعدل.' : '.'));
   else if (A.peak && A.peak.x >= 1.5) out.push('الضغط تركّز بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b>: حوالي ' + A.peak.perHour + ' بلاغ بالساعة، يعني <b>' + A.peak.x + '×</b> باقي اليوم.');
+  /* حدث تذاكر مجمّعة (فصل مغذي محتمل): أكثف تجمّع خلال ساعة */
+  const mass = A.F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').sort((x, y) => x.start - y.start);
+  if (mass.length >= 10) {
+    let best = [0, 0];
+    for (let i = 0, j = 0; i < mass.length; i++) { while (mass[i].start - mass[j].start > 60 * 60000) j++; if (i - j + 1 > best[1] - best[0]) best = [j, i + 1]; }
+    const C = mass.slice(best[0], best[1]), cc = C.filter(f => !f.open), sub = A.F.filter(f => f.kind === 'بلاغ مشترك' && !f.open);
+    const avgOf = L => L.length ? Math.round(L.reduce((x, f) => x + f.dur, 0) / L.length) : 0;
+    if (C.length >= 10) out.push('<b>' + C.length + ' تذكرة مجمّعة</b> بين ' + fmtClock(C[0].start) + ' و' + fmtClock(C[C.length - 1].start) + ' على ' + new Set(C.map(f => f.tr)).size + ' محول (الغالب فصل مغذي)، متوسط إغلاقها <b>' + fmtDur(avgOf(cc)) + '</b> مقابل ' + fmtDur(avgOf(sub)) + ' لبلاغات المشتركين — وهي اللي رفعت المتوسط العام' + (mass.length > C.length ? ' (إجمالي المجمّعة اليوم ' + mass.length + ')' : '') + '.');
+  }
   const exposed = A.F.filter(f => f.dur > 180).length, near = A.F.filter(f => f.open && f.dur >= 150 && f.dur <= 180).length;
   out.push(exposed ? '<b>' + exposed + ' بلاغ تجاوز 3 ساعات</b> (تعرّض نظامي)' + (near ? ' و' + near + ' بلاغ مفتوح قريب من الحد' : '') + '؛ يلزم توثيق سبب التأخير لكل منها خلال 5 أيام عمل.'
     : near ? '<b>' + near + ' بلاغ مفتوح قريب من حد الـ3 ساعات</b> — أولوية فورية.' : 'ما فيه أي بلاغ تجاوز المعيار النظامي (3 ساعات) ✓');
   return out;
 }
+const fmtClock = t => new Date(t).toLocaleTimeString('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit' });
 const spanTxt = A => Math.round((A.t1 - A.t0) / 3600000) + ' ساعات';
 
 /* التوصيات: إجراء + سبب + مسؤول + أولوية */

@@ -393,7 +393,7 @@ details.card summary{cursor:pointer;font-weight:700}
 @media print{
   html,body{height:auto;overflow:visible;background:#fff}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .bar,.nav,.no-print,#stMode,.toast,.modal,.boot,.fab-add{display:none!important}
+  .bar,.nav,.no-print,#stMode,.toast,.modal,.boot,.fab-add,.warnbar{display:none!important}
   .app{display:block;height:auto}.views{position:static}
   .view{position:static;overflow:visible}
   .view:not(#v-stats){display:none!important}

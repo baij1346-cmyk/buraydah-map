@@ -59,7 +59,7 @@ function render() {
   const SC = scorecard(F, T), ICON = { g: '✓', a: '!', r: '✕', n: '' };
   h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>مؤشرات الأداء مقابل الأهداف <small>' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small></h3><div class="kpis-x">' + SC.map(k =>
     '<div class="kx ' + k.s + '"><span class="kx-t">' + k.t + '</span><b>' + (k.v == null ? '—' : k.unit === 'د' ? fmtDur(k.v) : k.v + k.unit) + '</b><span class="kx-g">الهدف ' + (k.unit === 'د' ? '≤ ' + k.target + ' د' : (k.k === 'over180' ? k.target : k.target + k.unit)) + '</span><span class="rag ' + k.s + '"><i>' + ICON[k.s] + '</i>' + RAG_LABEL[k.s] + '</span></div>').join('') + '</div>' +
-    '<div class="vol"><span><b>' + a.n + '</b> بلاغ</span><span><b>' + a.closed + '</b> انحل</span><span><b>' + a.open + '</b> مفتوح وقت آخر تقرير</span><span><b>' + a.over + '</b> تجاوز ساعتين</span></div></section>';
+    '<div class="vol"><span><b>' + a.n + '</b> بلاغ' + (F.some(f => f.kind && f.kind !== 'بلاغ مشترك') ? ' (' + F.filter(f => f.kind === 'بلاغ مشترك').length + ' مشترك + ' + F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').length + ' تذكرة مجمّعة)' : '') + '</span><span><b>' + a.closed + '</b> انحل</span><span><b>' + a.open + '</b> مفتوح وقت آخر تقرير</span><span><b>' + a.over + '</b> تجاوز ساعتين</span></div></section>';
   /* المراكز */
   const ok = A.centers.filter(x => x.r.closed);
   if (A.centers.length > 1) h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>مقارنة المراكز <small>متوسط مدة الإغلاق مقابل الهدف ' + T.avg + ' د</small></h3><div class="card">' +
