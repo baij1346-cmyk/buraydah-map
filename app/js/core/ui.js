@@ -126,6 +126,7 @@ export function faultCard(f, { manage = false, showCause = false } = {}) {
   if (f.open && f.dur >= 60) h += '<div class="pill ' + (f.dur >= 120 ? 'red' : 'amber') + '">التصعيد: ' + escalation(f.dur).t + '</div>';
   if (f.tech || f.src === 'sec') h += '<div class="kv"><span>الفني</span><b>' + (f.tech ? esc(f.tech) + (f.co && f.co !== 'غير محدد' ? ' <span class="tagx">' + esc(f.co) + '</span>' : '') : '<span style="color:var(--p1)">لم يُسند لفني</span>') + '</b></div>';
   if (f.sup) h += '<div class="kv"><span>المشرف</span><b>' + esc(f.sup) + '</b></div>';
+  if (f.net) h += '<div class="kv"><span>الشبكة</span><b class="net">' + [f.net.sub && 'محطة ' + f.net.sub, f.net.feeder && 'مغذي ' + f.net.feeder, f.net.zone && 'زون ' + f.net.zone, f.net.trNo && 'محول ' + f.net.trNo, f.net.iso && 'عزل ' + f.net.iso].filter(Boolean).map(x => '<span class="ltr">' + esc(x) + '</span>').join(' · ') + '</b></div>';
   if (f.src === 'manual' && f.ref.note) h += '<p class="rc-note">' + esc(f.ref.note) + '</p>';
   const nums = [];
   if (f.src === 'sec') {

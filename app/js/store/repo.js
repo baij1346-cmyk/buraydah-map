@@ -13,7 +13,7 @@ const DEF_SETTINGS = () => ({
 });
 const DEF_EVENT = () => ({ level: 1, start: null, closedAt: null, log: [] });
 
-export const S = { settings: DEF_SETTINGS(), event: DEF_EVENT(), seq: 1, snapshots: [], tickets: new Map(), reports: [], violations: [] };
+export const S = { settings: DEF_SETTINGS(), event: DEF_EVENT(), seq: 1, snapshots: [], tickets: new Map(), reports: [], violations: [], enrich: {}, trLv: {} };
 const subs = new Set();
 export const onChange = fn => subs.add(fn);
 const emit = () => subs.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
@@ -36,6 +36,7 @@ export async function init() {
   if (!S.settings.zonesTable) S.settings.zonesTable = JSON.parse(JSON.stringify(DEF_ZONES_TABLE));
   S.event = Object.assign(DEF_EVENT(), K.event || {});
   S.seq = K.seq || 1;
+  S.enrich = K.enrich || {}; S.trLv = K.trLv || {};
   S.snapshots = snaps.sort((a, b) => a.at - b.at);
   S.tickets = new Map(tix.map(t => [t.task, t]));
   S.reports = reps.sort((a, b) => a.t - b.t);
@@ -99,6 +100,21 @@ export async function updateTicket(task, patch) {
   Object.assign(t, patch); await db.put('tickets', t); emit();
 }
 
+/* ---------- تقرير ربط LV بشبكة MV: الشبكة والموقع لكل مهمة ---------- */
+const inQassim = (lat, lng) => lat > 24.5 && lat < 27.8 && lng > 41.5 && lng < 45.5; /* منطقة القصيم بأطرافها */
+export async function addEnrich(rows, file) {
+  let withLoc = 0, linked = 0;
+  rows.forEach(r => {
+    const ok = r.lat != null && inQassim(r.lat, r.lng);
+    S.enrich[r.task] = { sub: r.sub, feeder: r.feeder, zone: r.zone, trNo: r.trNo, iso: r.iso, volt: r.volt, lat: ok ? +r.lat.toFixed(6) : null, lng: ok ? +r.lng.toFixed(6) : null, file: file || '' };
+    if (ok) withLoc++;
+    const t = S.tickets.get(r.task);
+    if (t) { linked++; const k = t.trPre && t.trNum ? t.trPre + '-' + String(+t.trNum) : ''; if (k && ok && !S.trLv[k]) S.trLv[k] = [S.enrich[r.task].lat, S.enrich[r.task].lng]; }
+  });
+  await Promise.all([saveKV('enrich', S.enrich), saveKV('trLv', S.trLv)]); emit();
+  return { n: rows.length, withLoc, linked, feeders: new Set(rows.map(r => r.sub + '/' + r.feeder)).size };
+}
+
 /* ---------- البلاغات اليدوية ---------- */
 export async function addReport(r) { r.id = nextId(); S.reports.push(r); await db.put('reports', r); emit(); return r; }
 export async function updateReport(id, patch) {
@@ -117,14 +133,15 @@ export async function deleteViolation(id) { S.violations = S.violations.filter(v
 
 /* ---------- النسخ الاحتياطي ---------- */
 export function backup() {
-  return { app: 'buraydah-grid-ops', v: 1, at: now(), settings: S.settings, event: S.event, seq: S.seq, snapshots: S.snapshots, tickets: [...S.tickets.values()], reports: S.reports, violations: S.violations };
+  return { app: 'buraydah-grid-ops', v: 1, at: now(), settings: S.settings, event: S.event, seq: S.seq, snapshots: S.snapshots, tickets: [...S.tickets.values()], reports: S.reports, violations: S.violations, enrich: S.enrich, trLv: S.trLv };
 }
 export async function restore(b) {
   if (!b || b.app !== 'buraydah-grid-ops') throw new Error('bad');
   await Promise.all(['snapshots', 'tickets', 'reports', 'violations'].map(db.clear));
   S.settings = Object.assign(DEF_SETTINGS(), b.settings || {}); S.event = Object.assign(DEF_EVENT(), b.event || {}); S.seq = b.seq || 1;
   S.snapshots = b.snapshots || []; S.tickets = new Map((b.tickets || []).map(t => [t.task, t]));
-  S.reports = b.reports || []; S.violations = b.violations || [];
+  S.reports = b.reports || []; S.violations = b.violations || []; S.enrich = b.enrich || {}; S.trLv = b.trLv || {};
+  await Promise.all([saveKV('enrich', S.enrich), saveKV('trLv', S.trLv)]);
   await Promise.all([saveKV('settings', S.settings), saveKV('event', S.event), saveKV('seq', S.seq),
     db.putMany('snapshots', S.snapshots), db.putMany('tickets', [...S.tickets.values()]), db.putMany('reports', S.reports), db.putMany('violations', S.violations)]);
   emit();
@@ -132,7 +149,7 @@ export async function restore(b) {
 /* تصفير الأعطال: يمسح التقارير والبلاغات ويبقي الإعدادات والمقاولين والأهداف والمخالفات */
 export async function resetFaults() {
   await Promise.all(['snapshots', 'tickets', 'reports'].map(db.clear));
-  S.snapshots = []; S.tickets = new Map(); S.reports = [];
+  S.snapshots = []; S.tickets = new Map(); S.reports = []; S.enrich = {}; await saveKV('enrich', S.enrich);
   S.event = { level: 1, start: null, closedAt: null, log: [] }; await saveKV('event', S.event);
   emit();
 }

@@ -16,7 +16,8 @@ export const isPeak = t => S.settings.rules.peakMonths.includes(new Date(t).getM
 
 /* بلاغ من تقرير الكهرباء */
 export function fromTicket(t) {
-  const key = trKey(t), p = trLoc(key, S.settings.tr, t.center);
+  const key = trKey(t), ex = S.enrich[t.task];
+  const p = ex && ex.lat != null ? { lat: ex.lat, lng: ex.lng, auto: false } : trLoc(key, Object.assign({}, S.trLv, S.settings.tr), t.center);
   const z = p ? zoneOf(p.lat, p.lng) : -1;
   /* إقفال يدوي: يُعتمد إذا ما ظهر البلاغ في تقرير بعد وقت الإقفال (لو ظهر = انفتح من جديد) */
   const manual = !t.closed && t.mclosed && t.mclosed >= t.lastSeen;
@@ -27,7 +28,7 @@ export function fromTicket(t) {
     dur: live, uncertain: !!t.uncertain, center: t.center || '', tech: t.tech || '', sup: t.sup || '',
     co: company(t.tech), zone: z, tr: key, lat: p ? p.lat : null, lng: p ? p.lng : null, approx: p ? p.auto : false,
     cause: t.cause || '', acc: t.acc || '', sub: t.sub || '', affected: 1, repDay: t.repDay || 0, repYear: t.repYear || 0,
-    st: t.st || '', kind: t.kind || '', rain: isRain(t.start), peak: isPeak(t.start)
+    st: t.st || '', kind: t.kind || '', rain: isRain(t.start), peak: isPeak(t.start), net: ex || null
   };
 }
 /* بلاغ يدوي */

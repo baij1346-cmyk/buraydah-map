@@ -90,10 +90,20 @@ function render() {
     '<div class="card"><p class="pg" style="margin:0">توزيع مدة الإغلاق لكل مقاول</p>' + stack100(B.filter(r => r.n >= 3).map(r => ({ label: r.k, parts: r.b }))) + '<p class="hint">الدرجة من 100 = نصفها نسبة الإغلاق خلال ساعة، ونصفها الالتزام بعدم تجاوز ساعتين. أخضر ≥ 75، برتقالي ≥ 60.</p></div>'
     : '<div class="empty">ما فيه بلاغات لهالمركز.</div>';
   h += '</section>';
+  /* التركّز على المغذيات (من تقرير ربط LV بشبكة MV) */
+  const withNet = F.filter(f => f.net && f.net.feeder);
+  if (withNet.length >= 5) {
+    const G = [...groupBy(withNet, f => f.net.sub + '/' + f.net.feeder)].map(([k, L]) => ({ k, L, zones: new Set(L.map(f => f.net.zone).filter(Boolean)).size, trs: new Set(L.map(f => f.net.trNo).filter(Boolean)).size, open: L.filter(f => f.open).length })).sort((x, y) => y.L.length - x.L.length);
+    h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>التركّز على المغذيات <small>' + withNet.length + ' من ' + F.length + ' بلاغ مربوط بالشبكة</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المحطة / المغذي</th><th class="n">البلاغات</th><th class="n">مفتوح</th><th class="n">زونات</th><th class="n">محولات</th><th>أكثر نقطة عزل</th></tr></thead><tbody>' +
+      G.slice(0, 10).map(g => { const iso = [...groupBy(g.L.filter(f => f.net.iso), f => f.net.iso)].sort((a, b) => b[1].length - a[1].length)[0];
+        return '<tr><td class="ltr" style="text-align:right"><b>' + esc(g.k) + '</b></td><td class="n"><b>' + g.L.length + '</b></td><td class="n">' + (g.open || '—') + '</td><td class="n">' + g.zones + '</td><td class="n">' + g.trs + '</td><td class="ltr" style="text-align:right">' + (iso ? esc(iso[0]) + ' (' + iso[1].length + ')' : '—') + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<p class="hint">مغذي عليه بلاغات كثيرة على أكثر من زون = غالبًا مشكلة جهد متوسط (فصل/تذبذب) مو أعطال فردية.</p></section>';
+    A.feeders = G;
+  }
   /* التوصيات */
   const B0 = Math.max(1, S.settings.baseline || 15), wx = S.settings.wx, op = a.open;
   const sugLv = wx === 'red' ? 4 : (wx === 'orange' || op >= 3 * B0) ? 3 : (wx === 'yellow' || op >= 2 * B0) ? 2 : 1;
-  const RC = recommendations(A, center, T, { noCause, located, level: S.event.level || 1, sugLv, B0 });
+  const RC = recommendations(A, center, T, { noCause, located, level: S.event.level || 1, sugLv, B0, feeders: A.feeders });
   if (RC.length) h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>التوصيات والإجراءات</h3><div class="tbl-wrap"><table class="dtable recs"><thead><tr><th>الأولوية</th><th>الإجراء</th><th>المبرر</th><th>المسؤول</th></tr></thead><tbody>' +
     RC.map(r => '<tr><td><span class="prio p' + r.p + '">' + PRIO[r.p] + '</span></td><td><b>' + bidi(r.t) + '</b></td><td>' + bidi(r.why) + '</td><td>' + esc(r.who) + '</td></tr>').join('') + '</tbody></table></div></section>';
   /* ملاحظات تشغيلية */

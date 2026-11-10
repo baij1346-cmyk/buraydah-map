@@ -2,7 +2,7 @@
 import * as repo from './store/repo.js';
 import { migrateOld } from './store/migrate.js';
 import { loadGeo } from './core/geo.js';
-import { readReport } from './sec/pdf.js';
+import { readAny } from './sec/pdf.js';
 import { updatedAt } from './sec/reconcile.js';
 import { LV } from './core/const.js';
 import { toast, fmtDur, fmtTime, mins, now, esc } from './core/util.js';
@@ -90,7 +90,14 @@ async function importFiles(files) {
   for (const f of files) {
     toast('جاري قراءة ' + f.name + '…');
     try {
-      const reps = await readReport(f);
+      const got = await readAny(f);
+      if (got.type === 'lv') {
+        if (!got.rows.length) { out.push('<li>' + esc(f.name) + ': تقرير ربط LV بشبكة MV بس ما لقيت فيه مهام.</li>'); continue; }
+        const r = await repo.addEnrich(got.rows, f.name);
+        out.push('<li><b>' + esc(f.name) + '</b> — تقرير ربط LV بشبكة MV: <b>' + r.n + '</b> مهمة على ' + r.feeders + ' مغذي<br>بموقع على الخريطة: <b>' + r.withLoc + '</b> · مرتبطة ببلاغات المنصة: <b>' + r.linked + '</b>' + (r.linked < r.n ? ' (الباقي يرتبط لما ترفع تقرير العمليات اللي فيه)' : '') + '</li>');
+        continue;
+      }
+      const reps = got.reports;
       if (!reps.length) { out.push('<li>' + esc(f.name) + ': ما لقيت بلاغات. تأكد إنه تقرير توجيه البلاغات.</li>'); continue; }
       if (reps.length === 1) {
         const res = await repo.addSnapshot(reps[0], f.name);
@@ -131,6 +138,7 @@ async function loadSeeds() {
       const have = new Set(repo.S.snapshots.map(x => x.at)), fresh = d.reports.filter(r => !have.has(updatedAt(r.updated)));
       if (fresh.length) await repo.addSnapshots(fresh.map(r => Object.assign(r, { file: d.label })));
       (d.rainDays || []).forEach(x => { repo.S.settings.rainDays[x] = true; });
+      if (Array.isArray(d.enrich) && d.enrich.length) await repo.addEnrich(d.enrich.filter(r => !repo.S.enrich[r.task]), d.label);
       done[file] = true; repo.S.settings.seeds = done; await repo.saveSettings();
       toast('تمت إضافة ' + d.label);
     }

@@ -83,6 +83,7 @@ export function recommendations(A, focus, T, extra = {}) {
   accs.slice(0, 2).forEach(([, L]) => R.push({ p: 1, t: 'زيارة ميدانية وفحص جذري للمحول ' + (L[0].ref.tr || ''), why: 'نفس المشترك بلّغ ' + L.length + ' مرات' + (L.some(f => f.open) ? ' وللحين مفتوح' : ''), who: 'المشرف + المقاول' }));
   const trs = [...groupBy(FC.filter(f => f.tr), f => f.tr)].filter(([, L]) => L.length >= 4).sort((x, y) => y[1].length - x[1].length);
   if (trs.length) R.push({ p: 2, t: 'إدراج ' + trs.length + ' محول في قائمة الفحص الوقائي', why: trs.slice(0, 3).map(([k, L]) => k + ' (' + L.length + ')').join('، '), who: 'التخطيط والصيانة' });
+  (extra.feeders || []).filter(g => g.L.length >= 5 && g.zones >= 2).slice(0, 2).forEach(g => R.push({ p: 1, t: 'فحص المغذي ' + g.k + ' (جهد متوسط)', why: g.L.length + ' بلاغ على ' + g.zones + ' زون و' + g.trs + ' محول' + (g.open ? '، منها ' + g.open + ' مفتوح' : ''), who: 'تحكم الجهد المتوسط' }));
   const nt = F.filter(f => !f.open && !f.tech).length;
   if (nt >= Math.max(5, F.length * 0.1)) R.push({ p: 3, t: 'مراجعة ' + nt + ' بلاغ انقفل بدون فني مسند', why: 'التحقق إن الإغلاق صحيح وما يتكرر البلاغ', who: 'منسق البلاغات' });
   if (extra.noCause) R.push({ p: 3, t: 'تسجيل سبب العطل لـ' + extra.noCause + ' بلاغ مقفل', why: 'بدونه ما يتحدد نوع العمل (إحلال/تعزيز/صيانة)', who: 'المشرفين' });
