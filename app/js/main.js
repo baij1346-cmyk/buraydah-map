@@ -130,6 +130,7 @@ async function loadSeeds() {
       /* التقارير المرفوعة من قبل على هالجهاز (بالأسماء الكاملة) ما نستبدلها بالنسخة المنشورة */
       const have = new Set(repo.S.snapshots.map(x => x.at)), fresh = d.reports.filter(r => !have.has(updatedAt(r.updated)));
       if (fresh.length) await repo.addSnapshots(fresh.map(r => Object.assign(r, { file: d.label })));
+      (d.rainDays || []).forEach(x => { repo.S.settings.rainDays[x] = true; });
       done[file] = true; repo.S.settings.seeds = done; await repo.saveSettings();
       toast('تمت إضافة ' + d.label);
     }
@@ -167,7 +168,7 @@ async function storageCheck() {
     return;
   }
   /* تصفير الأعطال مرة وحدة على كل جهاز (طلب رئيس القسم 30 أكتوبر). لتصفير جديد: زد الرقم */
-  const RESET_V = 1;
+  const RESET_V = 2; /* 2: بداية حالة الأمطار 10 نوفمبر */
   if ((repo.S.settings.faultsResetV || 0) < RESET_V) {
     if (repo.S.snapshots.length || repo.S.reports.length) { await repo.resetFaults(); setTimeout(() => toast('تم تصفير الأعطال. الإعدادات والمقاولين باقية'), 700); }
     repo.S.settings.faultsResetV = RESET_V; await repo.saveSettings();

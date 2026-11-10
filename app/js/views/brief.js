@@ -36,7 +36,11 @@ export function analyzeDay(d) {
     const rest = hk.filter(h => h < peak || h > peak + 2), restAvg = rest.length ? rest.reduce((a, h) => a + hours[h], 0) / rest.length : 0;
     peak = { from: peak, to: peak + 3, perHour: Math.round(best / 3), restAvg: Math.round(restAvg), x: restAvg ? Math.round(10 * best / 3 / restAvg) / 10 : null };
   }
-  return { d, snaps, t0, t1, F, centers, all, hours, peak };
+  /* تطور المفتوح عبر التقارير + الوارد والمنقفل آخر ساعة */
+  const ids = new Set(F.map(f => f.id));
+  const series = snaps.map(s => ({ at: s.at, n: s.rows.filter(r => ids.has(r.task)).length }));
+  const inflow = F.filter(f => f.start >= t1 - HOUR).length, outflow = F.filter(f => !f.open && f.end >= t1 - HOUR && f.end <= t1).length;
+  return { d, snaps, t0, t1, F, centers, all, hours, peak, series, inflow, outflow };
 }
 
 function render() {
@@ -60,6 +64,14 @@ function render() {
   h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>مؤشرات الأداء مقابل الأهداف <small>' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small></h3><div class="kpis-x">' + SC.map(k =>
     '<div class="kx ' + k.s + '"><span class="kx-t">' + k.t + '</span><b>' + (k.v == null ? '—' : k.unit === 'د' ? fmtDur(k.v) : k.v + k.unit) + '</b><span class="kx-g">الهدف ' + (k.unit === 'د' ? '≤ ' + k.target + ' د' : (k.k === 'over180' ? k.target : k.target + k.unit)) + '</span><span class="rag ' + k.s + '"><i>' + ICON[k.s] + '</i>' + RAG_LABEL[k.s] + '</span></div>').join('') + '</div>' +
     '<div class="vol"><span><b>' + a.n + '</b> بلاغ' + (F.some(f => f.kind && f.kind !== 'بلاغ مشترك') ? ' (' + F.filter(f => f.kind === 'بلاغ مشترك').length + ' مشترك + ' + F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').length + ' تذكرة مجمّعة)' : '') + '</span><span><b>' + a.closed + '</b> انحل</span><span><b>' + a.open + '</b> مفتوح وقت آخر تقرير</span><span><b>' + a.over + '</b> تجاوز ساعتين</span></div></section>';
+  /* تطور المفتوح */
+  if (A.series.length >= 3) {
+    const mx = Math.max(1, ...A.series.map(x => x.n)), up = A.series[A.series.length - 1].n >= 1.5 * Math.max(1, A.series[0].n);
+    h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>تطور البلاغات المفتوحة <small>في كل تقرير' + (up ? ' · في تصاعد' : '') + '</small></h3><div class="card"><div class="hr-wrap"><div class="bars hr" style="direction:ltr">' +
+      A.series.map((x, i) => '<div class="' + (i === A.series.length - 1 ? 'rain' : '') + '" style="height:' + (100 * x.n / mx) + '%" data-t="' + fmtTime(x.at) + ' — ' + x.n + ' مفتوح"><span>' + x.n + '</span></div>').join('') + '</div>' +
+      '<div class="hr-ax" style="direction:ltr">' + A.series.map(x => '<span>' + new Date(x.at).toTimeString().slice(0, 5) + '</span>').join('') + '</div></div>' +
+      '<p class="hint">آخر ساعة: ورد <b>' + A.inflow + '</b> بلاغ وانقفل <b>' + A.outflow + '</b>.' + (A.inflow > A.outflow ? ' الوارد أكثر من المنقفل، يعني المفتوح بيزيد.' : '') + '</p></div></section>';
+  }
   /* المراكز */
   const ok = A.centers.filter(x => x.r.closed);
   if (A.centers.length > 1) h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>مقارنة المراكز <small>متوسط مدة الإغلاق مقابل الهدف ' + T.avg + ' د</small></h3><div class="card">' +
@@ -79,7 +91,9 @@ function render() {
     : '<div class="empty">ما فيه بلاغات لهالمركز.</div>';
   h += '</section>';
   /* التوصيات */
-  const RC = recommendations(A, center, T, { noCause, located });
+  const B0 = Math.max(1, S.settings.baseline || 15), wx = S.settings.wx, op = a.open;
+  const sugLv = wx === 'red' ? 4 : (wx === 'orange' || op >= 3 * B0) ? 3 : (wx === 'yellow' || op >= 2 * B0) ? 2 : 1;
+  const RC = recommendations(A, center, T, { noCause, located, level: S.event.level || 1, sugLv, B0 });
   if (RC.length) h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>التوصيات والإجراءات</h3><div class="tbl-wrap"><table class="dtable recs"><thead><tr><th>الأولوية</th><th>الإجراء</th><th>المبرر</th><th>المسؤول</th></tr></thead><tbody>' +
     RC.map(r => '<tr><td><span class="prio p' + r.p + '">' + PRIO[r.p] + '</span></td><td><b>' + bidi(r.t) + '</b></td><td>' + bidi(r.why) + '</td><td>' + esc(r.who) + '</td></tr>').join('') + '</tbody></table></div></section>';
   /* ملاحظات تشغيلية */

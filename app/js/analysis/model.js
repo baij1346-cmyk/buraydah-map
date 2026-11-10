@@ -5,6 +5,8 @@ import { normAr, isoDay, now, MIN } from '../core/util.js';
 
 export function company(tech) {
   const n = normAr(tech); if (!n) return '';
+  /* الشرهان يطلع أحيانًا مقطّع في التقرير: «هان … الشى» */
+  if (/^هان/.test(n) && n.includes('الشي')) return 'الشرهان';
   const hit = S.settings.co.find(([k]) => k && n.includes(normAr(k)));
   return hit ? hit[1] : 'غير محدد';
 }

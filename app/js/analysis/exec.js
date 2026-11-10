@@ -42,6 +42,9 @@ export function contractorBoard(FC) {
 /* الرسائل الرئيسية (3 جمل تختصر اليوم) */
 export function keyMessages(A, focus, T) {
   const out = [], a = A.all;
+  /* حدث جاري: المفتوح يتصاعد */
+  const sr = A.series || [];
+  if (sr.length >= 3 && sr[sr.length - 1].n >= 1.5 * Math.max(1, sr[0].n)) out.push('<b>الحدث في تصاعد:</b> المفتوح ارتفع من <b>' + sr[0].n + '</b> (' + fmtClock(sr[0].at) + ') إلى <b>' + sr[sr.length - 1].n + '</b> (' + fmtClock(sr[sr.length - 1].at) + ')' + (A.inflow != null ? '، وآخر ساعة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' انقفل.' : '.'));
   const sc = scorecard(A.F, T), w60 = sc[0], w180 = sc[2];
   out.push('أُغلق <b>' + pct(a.closed, a.n) + '%</b> من ' + a.n + ' بلاغ خلال ' + spanTxt(A) + '، بمتوسط <b>' + fmtDur(a.avg) + '</b>؛ ونسبة الإغلاق خلال ساعة <b>' + a.within[0] + '%</b> مقابل هدف ' + T.w60 + '%' + (w60.s === 'g' ? ' (محقق).' : '.'));
   const ok = A.centers.filter(x => x.r.closed >= 5).sort((x, y) => y.r.avg - x.r.avg);
@@ -67,6 +70,9 @@ const spanTxt = A => Math.round((A.t1 - A.t0) / 3600000) + ' ساعات';
 /* التوصيات: إجراء + سبب + مسؤول + أولوية */
 export function recommendations(A, focus, T, extra = {}) {
   const R = [], F = A.F, FC = F.filter(f => f.center === focus);
+  const LVN = { 2: 'استعداد', 3: 'حدث كبير', 4: 'حدث شامل' };
+  if (extra.sugLv && extra.sugLv > (extra.level || 1)) R.push({ p: 1, t: 'إعلان المستوى ' + extra.sugLv + ' (' + LVN[extra.sugLv] + ')', why: A.all.open + ' بلاغ مفتوح مقابل معدل يومي ' + extra.B0 + ' (' + Math.round(A.all.open / extra.B0 * 10) / 10 + '×)', who: 'رئيس القسم' });
+  if (A.inflow > A.outflow && A.inflow >= 10) R.push({ p: 1, t: 'نقل فرق إضافية للمقاولين الأعلى ضغطًا', why: 'آخر ساعة ورد ' + A.inflow + ' وانقفل ' + A.outflow + ' — الفجوة تكبر', who: 'المنسق الميداني' });
   const near = F.filter(f => f.open && f.dur >= 120).sort((x, y) => y.dur - x.dur);
   if (near.length) R.push({ p: 1, t: 'تصعيد فوري لـ' + near.length + ' بلاغ مفتوح تجاوز ساعتين', why: 'أقدمها ' + fmtDur(near[0].dur) + ' (' + (near[0].co || 'بدون فني') + ' · ' + near[0].center + ')', who: 'قائد الحدث + المشرف' });
   const board = contractorBoard(FC).filter(r => r.real && r.closed >= 5);
