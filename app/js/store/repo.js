@@ -26,9 +26,11 @@ export async function init() {
   /* كلمات مقاولين جديدة تنضاف لقائمة المستخدم بدون ما تمس تعديلاته */
   DEF_CO.forEach(([k, l]) => { if (!S.settings.co.some(x => x[0] === k)) S.settings.co.push([k, l]); });
   /* تصحيح اسم المقاول: الشرهان (مو الشهراني) */
-  S.settings.co.forEach(x => { if (x[1] === 'الشهراني') x[1] = 'الشرهان'; });
-  if (S.settings.zonesTable && S.settings.zonesTable['الشهراني']) { S.settings.zonesTable['الشرهان'] = S.settings.zonesTable['الشهراني']; delete S.settings.zonesTable['الشهراني']; }
-  S.settings.zones.forEach(z => { if (z.co === 'الشهراني') z.co = 'الشرهان'; });
+  /* تصحيح أسماء المقاولين: الشرهان (مو الشهراني)، الجناحين (مو الجناحي) */
+  const FIX = { 'الشهراني': 'الشرهان', 'الجناحي': 'الجناحين' };
+  S.settings.co.forEach(x => { if (FIX[x[1]]) x[1] = FIX[x[1]]; if (x[0] === 'الجناحي') x[0] = 'الجناحين'; });
+  Object.entries(FIX).forEach(([a, b]) => { if (S.settings.zonesTable && S.settings.zonesTable[a]) { S.settings.zonesTable[b] = S.settings.zonesTable[a]; delete S.settings.zonesTable[a]; } });
+  S.settings.zones.forEach(z => { if (FIX[z.co]) z.co = FIX[z.co]; });
   if (!Array.isArray(S.settings.exclude)) S.settings.exclude = [...DEF_EXCLUDE];
   if (!S.settings.scopeV) { S.settings.onlyBuraydah = true; S.settings.scopeV = 1; } /* النطاق صار بريدة فقط افتراضيًا */
   if (!S.settings.zonesTable) S.settings.zonesTable = JSON.parse(JSON.stringify(DEF_ZONES_TABLE));
