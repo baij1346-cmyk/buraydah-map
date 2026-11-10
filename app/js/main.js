@@ -160,6 +160,20 @@ async function storageCheck() {
   w.querySelector('button').onclick = () => { w.hidden = true; try { (inApp ? sessionStorage : localStorage).setItem('warn-x', '1'); } catch (e) { } };
 }
 
+/* ---------- إصدار جديد؟ ننبّه المستخدم بدل ما يبقى على نسخة قديمة ---------- */
+const VERSION = typeof __VERSION__ !== 'undefined' ? __VERSION__ : 'dev';
+async function checkVersion() {
+  if (VERSION === 'dev') return;
+  try {
+    const v = (await fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json())).v;
+    if (v && v !== VERSION && !document.getElementById('updbar')) {
+      const b = document.createElement('button'); b.id = 'updbar'; b.className = 'updbar'; b.type = 'button';
+      b.innerHTML = '<b>تحديث جديد للمنصة</b><span>اضغط هنا للتحديث</span>';
+      b.onclick = () => location.replace(location.pathname + '?v=' + v + location.hash); document.body.appendChild(b);
+    }
+  } catch (e) { }
+}
+
 /* ---------- التشغيل ---------- */
 (async () => {
   const boot = document.getElementById('boot');
@@ -182,7 +196,8 @@ async function storageCheck() {
     repo.S.settings.faultsResetV = RESET_V; await repo.saveSettings();
   }
   boot.remove();
-  loadSeeds(); storageCheck();
+  loadSeeds(); storageCheck(); checkVersion(); setInterval(checkVersion, 5 * 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
   repo.onChange(() => { renderBar(); if (mounted.has(cur)) VIEWS[cur].render(); });
   renderBar(); show(location.hash.slice(1) || 'ops');
   setInterval(() => { renderBar(); if (mounted.has(cur) && VIEWS[cur].tick !== false) VIEWS[cur].render(); }, 60000);

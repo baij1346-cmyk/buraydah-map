@@ -430,3 +430,7 @@ details.card summary{cursor:pointer;font-weight:700}
 .warnbar span{opacity:.85}
 .warnbar button{position:absolute;top:8px;left:10px;background:none;border:0;color:#fff;font-size:1rem;cursor:pointer;padding:4px}
 .kv b.net{display:flex;flex-wrap:wrap;gap:2px 6px;font-size:.8rem;color:var(--muted)}
+.updbar{position:fixed;z-index:2600;bottom:calc(env(safe-area-inset-bottom,0px) + 84px);left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;border:0;border-radius:14px;padding:12px 20px;box-shadow:var(--sh-lg);display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;cursor:pointer}
+.updbar span{font-size:.8rem;opacity:.9}
+@media (min-width:1000px){.updbar{bottom:24px}}
+@media print{.updbar{display:none!important}}
