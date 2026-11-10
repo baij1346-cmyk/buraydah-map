@@ -43,11 +43,11 @@ export function fromReport(r) {
     st: r.st, kind: r.type, rain: isRain(r.t), peak: isPeak(r.t)
   };
 }
-export function faults({ from = 0, to = Infinity, center = '' } = {}) {
+export function faults({ from = 0, to = Infinity, center = '', all = false } = {}) {
   const a = [...S.tickets.values()].map(fromTicket).concat(S.reports.map(fromReport));
   const ex = S.settings.exclude || [];
   /* نطاق القسم الحالي: بريدة فقط (يتغير من الإعدادات) */
-  const only = S.settings.onlyBuraydah ? 'بريدة' : '';
+  const only = S.settings.onlyBuraydah && !all ? 'بريدة' : '';
   return a.filter(f => f.start >= from && f.start < to && (!center || f.center === center) && (!only || f.center === only) && !ex.includes(f.co));
 }
-export const openFaults = () => faults().filter(f => f.open);
+export const openFaults = (o = {}) => faults(o).filter(f => f.open);

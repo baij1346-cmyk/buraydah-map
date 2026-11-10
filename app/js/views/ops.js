@@ -7,12 +7,14 @@ import { lookup, zoneOf, G, trLabel } from '../core/geo.js';
 import { esc, toast, fmtDur, arDigits, now } from '../core/util.js';
 
 let root, map, layer, filt = 'all', mode = 'map', pickCb = null, banner;
+/* نطاق الخريطة: القصيم كامل (افتراضي) أو بريدة بس — باقي الأقسام تبقى على نطاق الإعدادات */
+let scope = (() => { try { return localStorage.getItem('ops-scope') || 'qassim'; } catch (e) { return 'qassim'; } })();
 
 const BCOL = ['#F4A259', '#E9B308', '#DC2626', '#7F1D1D'];
 function mount(el) {
   root = el;
   el.innerHTML = '<div class="ops"><div class="ops-map"><div class="map" id="opsMap" aria-label="خريطة البلاغات المفتوحة"></div>' +
-    '<div class="map-legend" id="opsLegend"></div>' +
+    '<div class="map-legend" id="opsLegend"></div><div class="scope seg" id="opsScope"><button data-sc="buraydah">بريدة</button><button data-sc="qassim">القصيم</button></div>' +
     '<div class="picking" id="opsPick" hidden><span>اضغط على مكان المحول في الخريطة</span><button type="button">إلغاء</button></div></div>' +
     '<div class="ops-list"><div class="pad" id="opsList"></div></div>' +
     '<div class="ops-toggle"><button data-m="map" aria-pressed="true">الخريطة</button><button data-m="list" aria-pressed="false">القائمة</button></div>' +
@@ -20,6 +22,7 @@ function mount(el) {
   map = makeMap(el.querySelector('#opsMap'));
   layer = L.layerGroup().addTo(map);
   map._fit = () => fitAll(true);
+  el.querySelectorAll('#opsScope button').forEach(b => b.onclick = () => { scope = b.dataset.sc; try { localStorage.setItem('ops-scope', scope); } catch (e) { } fitted = false; filt = 'all'; render(); });
   banner = el.querySelector('#opsPick');
   banner.querySelector('button').onclick = () => { pickCb = null; banner.hidden = true; };
   map.on('click', e => { if (!pickCb) return; const cb = pickCb; pickCb = null; banner.hidden = true; cb(e.latlng.lat, e.latlng.lng); });
@@ -27,7 +30,7 @@ function mount(el) {
   el.querySelector('#opsAdd').onclick = () => newReport();
 }
 let bounds = null, fitted = false;
-function fitAll(anim) { if (bounds && bounds.isValid()) map.fitBounds(bounds, { maxZoom: 15, animate: !!anim, paddingTopLeft: [70, 40], paddingBottomRight: [90, 60] }); }
+function fitAll(anim) { if (bounds && bounds.isValid()) map.fitBounds(bounds, { maxZoom: 15, animate: !!anim, paddingTopLeft: [70, 60], paddingBottomRight: matchMedia('(max-width:999px)').matches ? [40, 200] : [230, 150] }); }
 function setMode(m) {
   mode = m; root.querySelector('.ops').classList.toggle('list', m === 'list');
   root.querySelectorAll('.ops-toggle button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
@@ -57,7 +60,8 @@ const FILTERS = [
 
 function render() {
   if (!root) return;
-  const all = openFaults().filter(f => f.center === 'بريدة' || !S.settings.onlyBuraydah);
+  const all = openFaults({ all: scope === 'qassim' }).filter(f => scope === 'qassim' || f.center === 'بريدة');
+  root.querySelectorAll('#opsScope button').forEach(b => b.setAttribute('aria-pressed', b.dataset.sc === scope));
   /* الخريطة: البلاغ المعروف موقعه = نقطة، والباقي = فقاعة عدد فوق مدينة المركز */
   layer.clearLayers();
   const pts = [];

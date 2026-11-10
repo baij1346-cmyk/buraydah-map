@@ -434,3 +434,5 @@ details.card summary{cursor:pointer;font-weight:700}
 .updbar span{font-size:.8rem;opacity:.9}
 @media (min-width:1000px){.updbar{bottom:24px}}
 @media print{.updbar{display:none!important}}
+.scope{position:absolute;z-index:1000;top:12px;left:50%;transform:translateX(-50%);box-shadow:var(--sh-lg);background:#fff}
+@media (max-width:999px){.scope{top:10px}}
