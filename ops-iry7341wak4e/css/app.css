@@ -468,3 +468,19 @@ details.card summary{cursor:pointer;font-weight:700}
 .hr-ax span{min-width:0;overflow:visible;white-space:nowrap}
 .bars.hr div span{font-size:.6rem}
 #brBody .rep-sec,#brBody .card,#brBody .tbl-wrap{max-width:100%;min-width:0}
+
+/* التقرير التنفيذي: ألوان هادئة مريحة للعين (بدون هوية أي جهة) */
+#brBody{--paper:#FBF8F2;--ink:#2F3437;--soft-line:#E8E2D6}
+#brBody .rep-cover{background:linear-gradient(135deg,#2F4858 0%,#3B5D63 60%,#4E7A73 100%)}
+#brBody .rep-cover::after{background:linear-gradient(90deg,#9CC3B5 0%,#D8C59A 100%)}
+#brBody .rep-brand .logo{background:linear-gradient(135deg,#D8C59A,#9CC3B5);color:#2F4858}
+#brBody .card,#brBody .msgs,#brBody .kx,#brBody .tbl-wrap,#brBody .dtable{background:var(--paper)!important;color:var(--ink);border-color:var(--soft-line)}
+#brBody .dtable thead th{background:#F1ECE2!important;color:#5A5F61}
+#brBody .dtable td{border-color:var(--soft-line)}
+#brBody .msgs{border-inline-start-color:#9CC3B5}
+#brBody .msgs li::marker,#brBody .rep-h>span{color:#3B5D63}
+#brBody .rep-h>span{background:#E4EFEA}
+#brBody .kx.g{border-top-color:#7FA88A}#brBody .kx.a{border-top-color:#D6A85C}#brBody .kx.r{border-top-color:#C98276}
+#brBody .hb-bar{background:#7C8C8E}
+.rep-note{margin:10px 0 4px;padding:10px 14px;border-radius:10px;background:#FBF3E4;border:1px solid #EAD9B8;color:#5B4A2B;font-size:.82rem;line-height:1.8}
+@media print{#brBody .card,#brBody .msgs,#brBody .kx,#brBody .tbl-wrap,#brBody .rep-note,#brBody .dtable thead th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}

@@ -194,10 +194,10 @@ async function checkVersion() {
     return;
   }
   /* تصفير الأعطال مرة وحدة على كل جهاز (طلب رئيس القسم 30 أكتوبر). لتصفير جديد: زد الرقم */
-  const RESET_V = 2; /* 2: بداية حالة الأمطار 10 نوفمبر */
+  const RESET_V = 3; /* 2: بداية حالة الأمطار 10 نوفمبر. 3: إعادة تحميل بيانات الحدث بعد تصحيح أسماء المقاولين */
   if ((repo.S.settings.faultsResetV || 0) < RESET_V) {
     if (repo.S.snapshots.length || repo.S.reports.length) { await repo.resetFaults(); setTimeout(() => toast('تم تصفير الأعطال. الإعدادات والمقاولين باقية'), 700); }
-    repo.S.settings.faultsResetV = RESET_V; await repo.saveSettings();
+    repo.S.settings.faultsResetV = RESET_V; repo.S.settings.seeds = {}; await repo.saveSettings();
   }
   boot.remove();
   loadSeeds(); storageCheck(); checkVersion(); setInterval(checkVersion, 5 * 60000);

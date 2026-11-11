@@ -1,6 +1,6 @@
 /* التقرير اليومي: ملخص تحليلي لكل يوم من تقارير الكهرباء المرفوعة (نفس تحليل رئيس القسم) */
 import { S } from '../store/repo.js';
-import { faults } from '../analysis/model.js';
+import { faults, company } from '../analysis/model.js';
 import { table, row } from '../analysis/stats.js';
 import { CENTERS, escalation, DEL_INFO } from '../core/const.js';
 import { trLabel } from '../core/geo.js';
@@ -68,7 +68,7 @@ function render() {
   let h = '<div class="row no-print">' + '<div class="seg">' + D.slice(0, 7).map(x => '<button data-d="' + x + '" aria-pressed="' + (x === day) + '">' + x.slice(5) + '</button>').join('') + '<button data-d="all" aria-pressed="' + (day === 'all') + '">تقرير الحدث كامل</button></div>' +
     '<span class="spacer"></span><div class="seg"><button data-v="0" aria-pressed="' + !full + '">مختصر</button><button data-v="1" aria-pressed="' + full + '">مفصّل</button></div><button class="tbtn primary" id="brPrint"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>التقرير التنفيذي (PDF)</button><a class="tbtn" id="brWa" target="_blank" rel="noopener">واتساب</a><button class="tbtn" id="brCopy">نسخ</button></div>';
   /* الغلاف */
-  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>قسم الصيانة والطوارئ · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>' + (EV ? (A.ended ? 'التقرير الختامي' : 'تقرير الحدث') + (F.some(f => f.rain) ? ' — حالة الأمطار' : '') : 'تقرير أداء معالجة الأعطال') + '</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
+  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>TBG · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>' + (EV ? (A.ended ? 'التقرير الختامي' : 'تقرير الحدث') + (F.some(f => f.rain) ? ' — حالة الأمطار' : '') : 'تقرير أداء معالجة الأعطال') + '</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
   /* الخلاصة التنفيذية */
   h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>الخلاصة التنفيذية</h3><ol class="msgs">' + keyMessages(A, center, T).map(m => '<li>' + m + '</li>').join('') + '</ol></section>';
   /* مؤشرات الأداء مقابل الأهداف */
@@ -145,10 +145,14 @@ function render() {
   /* التوصيات */
   const B0 = Math.max(1, S.settings.baseline || 15), wx = S.settings.wx, op = a.open;
   const sugLv = wx === 'red' ? 4 : (wx === 'orange' || op >= 3 * B0) ? 3 : (wx === 'yellow' || op >= 2 * B0) ? 2 : 1;
+  /* تحفظات قبل تطبيق الغرامات */
+  { const hist = new Map(); A.snaps.forEach(sn => (sn.rows || []).forEach(r => { const c = company(r.tech); if (!c) return; const L = hist.get(r.task) || new Set(); L.add(c); hist.set(r.task, L); }));
+    const moved = FC.filter(f => f.src === 'sec' && (hist.get(f.id) || new Set()).size > 1), edge = FC.filter(f => f.dur > 180 && f.dur <= 200 && f.co);
+    if (moved.length || edge.length) h += '<div class="rep-note"><b>قبل تطبيق أي غرامة:</b> ' + [moved.length ? moved.length + ' بلاغ انتقل بين أكثر من مقاول، ونُسب للمقاول الأخير' : '', edge.length ? edge.length + ' بلاغ تجاوز 3 ساعات بفارق لا يزيد عن 20 دقيقة، وهو ضمن هامش دقة الحساب' : ''].filter(Boolean).join('؛ و') + '. يُتحقق منها من النظام قبل اعتمادها.</div>'; }
   const RC = recommendations(A, center, T, { noCause, located, level: S.event.level || 1, sugLv, B0, feeders: A.feeders })
     .filter(r => !A.ended || !/إعلان المستوى|نقل فرق إضافية|تصعيد فوري/.test(r.a || r.act || r.t || JSON.stringify(r)));
-  if (RC.length) h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>التوصيات والإجراءات</h3><div class="tbl-wrap"><table class="dtable recs lim5"><thead><tr><th>الأولوية</th><th>الإجراء</th><th>المبرر</th><th>المسؤول</th></tr></thead><tbody>' +
-    RC.map(r => '<tr><td><span class="prio p' + r.p + '">' + PRIO[r.p] + '</span></td><td><b>' + bidi(r.t) + '</b></td><td>' + bidi(r.why) + '</td><td>' + esc(r.who) + '</td></tr>').join('') + '</tbody></table></div></section>';
+  if (RC.length) h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>التوصيات والإجراءات</h3><div class="tbl-wrap"><table class="dtable recs lim5"><thead><tr><th>الأولوية</th><th>الإجراء</th><th>المبرر</th></tr></thead><tbody>' +
+    RC.map(r => '<tr><td><span class="prio p' + r.p + '">' + PRIO[r.p] + '</span></td><td><b>' + bidi(r.t) + '</b></td><td>' + bidi(r.why) + '</td></tr>').join('') + '</tbody></table></div></section>';
   /* ملاحظات تشغيلية */
   const pts = insights(A, center);
   if (pts.length) h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>ملاحظات تشغيلية</h3><div class="card"><ul class="insights">' + pts.map(p => '<li class="' + (p.lv || '') + '">' + p.t + '</li>').join('') + '</ul></div></section>';

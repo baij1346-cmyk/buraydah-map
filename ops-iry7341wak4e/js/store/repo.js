@@ -27,6 +27,8 @@ export async function init() {
   DEF_CO.forEach(([k, l]) => { if (!S.settings.co.some(x => x[0] === k)) S.settings.co.push([k, l]); });
   /* تصحيح اسم المقاول: الشرهان (مو الشهراني) */
   /* تصحيح أسماء المقاولين: الشرهان (مو الشهراني)، الجناحين (مو الجناحي) */
+  /* أسماء مقاولين جديدة في الجدول الافتراضي تنضاف للأجهزة القديمة */
+  DEF_CO.forEach(([k, v]) => { if (!S.settings.co.some(x => x[0] === k)) S.settings.co.push([k, v]); });
   const FIX = { 'الشهراني': 'الشرهان', 'الجناحي': 'الجناحين' };
   S.settings.co.forEach(x => { if (FIX[x[1]]) x[1] = FIX[x[1]]; if (x[0] === 'الجناحي') x[0] = 'الجناحين'; });
   Object.entries(FIX).forEach(([a, b]) => { if (S.settings.zonesTable && S.settings.zonesTable[a]) { S.settings.zonesTable[b] = S.settings.zonesTable[a]; delete S.settings.zonesTable[a]; } });
