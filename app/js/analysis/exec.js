@@ -19,9 +19,9 @@ export function scorecard(F, T) {
   const avg = n ? Math.round(d.reduce((a, b) => a + b, 0) / n) : null;
   const over180 = F.filter(f => f.dur > 180).length;
   return [
-    { k: 'w60', t: 'انقفل خلال ساعة', v: w(60), unit: '%', target: T.w60, s: rag(w(60), T.w60, true, 10), why: 'سرعة الاستجابة الأولى' },
-    { k: 'w120', t: 'انقفل خلال ساعتين', v: w(120), unit: '%', target: T.w120, s: rag(w(120), T.w120, true, 5), why: 'حد التصعيد لقائد الحدث' },
-    { k: 'w180', t: 'انقفل خلال 3 ساعات', v: w(180), unit: '%', target: T.w180, s: rag(w(180), T.w180, true, 2), why: 'المعيار النظامي (تعويض المشترك بعده)' },
+    { k: 'w60', t: 'نسبة الإغلاق خلال ساعة', v: w(60), unit: '%', target: T.w60, s: rag(w(60), T.w60, true, 10), why: 'سرعة الاستجابة الأولى' },
+    { k: 'w120', t: 'نسبة الإغلاق خلال ساعتين', v: w(120), unit: '%', target: T.w120, s: rag(w(120), T.w120, true, 5), why: 'حد التصعيد لقائد الحدث' },
+    { k: 'w180', t: 'نسبة الإغلاق خلال 3 ساعات', v: w(180), unit: '%', target: T.w180, s: rag(w(180), T.w180, true, 2), why: 'المعيار النظامي (تعويض المشترك بعده)' },
     { k: 'avg', t: 'متوسط مدة الإغلاق', v: avg, unit: 'د', target: T.avg, s: rag(avg, T.avg, false, 15), why: 'كفاءة التشغيل العامة' },
     { k: 'over180', t: 'بلاغات تجاوزت 3 ساعات', v: over180, unit: '', target: T.over180, s: rag(over180, T.over180, false, 2), why: 'تعرّض نظامي مباشر' }];
 }
@@ -45,13 +45,13 @@ export function keyMessages(A, focus, T) {
   /* حدث جاري: المفتوح يتصاعد */
   const sr = A.series || [];
   const pk = sr.length ? sr.reduce((m, x) => x.n > m.n ? x : m, sr[0]) : null, last = sr[sr.length - 1];
-  if (sr.length >= 3 && pk !== last && last.n <= .6 * pk.n) out.push('<b>الحدث في تراجع:</b> المفتوح نزل من ذروة <b>' + pk.n + '</b> (' + fmtClock(pk.at) + ') إلى <b>' + last.n + '</b> (' + fmtClock(last.at) + ')' + (A.inflow != null ? '، وآخر ساعة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' انقفل' : '') + '.');
-  else if (sr.length >= 3 && sr[sr.length - 1].n >= 1.5 * Math.max(1, sr[0].n)) out.push('<b>الحدث في تصاعد:</b> المفتوح ارتفع من <b>' + sr[0].n + '</b> (' + fmtClock(sr[0].at) + ') إلى <b>' + sr[sr.length - 1].n + '</b> (' + fmtClock(sr[sr.length - 1].at) + ')' + (A.inflow != null ? '، وآخر ساعة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' انقفل.' : '.'));
+  if (sr.length >= 3 && pk !== last && last.n <= .6 * pk.n) out.push('<b>الحدث في تراجع:</b> انخفض المفتوح من ذروة <b>' + pk.n + '</b> (' + fmtClock(pk.at) + ') إلى <b>' + last.n + '</b> (' + fmtClock(last.at) + ')' + (A.inflow != null ? '، وخلال الساعة الأخيرة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' أُغلق' : '') + '.');
+  else if (sr.length >= 3 && sr[sr.length - 1].n >= 1.5 * Math.max(1, sr[0].n)) out.push('<b>الحدث في تصاعد:</b> ارتفع المفتوح من <b>' + sr[0].n + '</b> (' + fmtClock(sr[0].at) + ') إلى <b>' + sr[sr.length - 1].n + '</b> (' + fmtClock(sr[sr.length - 1].at) + ')' + (A.inflow != null ? '، وخلال الساعة الأخيرة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' أُغلق.' : '.'));
   const sc = scorecard(A.F, T), w60 = sc[0], w180 = sc[2];
   out.push('أُغلق <b>' + pct(a.closed, a.n) + '%</b> من ' + a.n + ' بلاغ خلال ' + spanTxt(A) + '، بمتوسط <b>' + fmtDur(a.avg) + '</b>؛ ونسبة الإغلاق خلال ساعة <b>' + a.within[0] + '%</b> مقابل هدف ' + T.w60 + '%' + (w60.s === 'g' ? ' (محقق).' : '.'));
   const ok = A.centers.filter(x => x.r.closed >= 5).sort((x, y) => y.r.avg - x.r.avg);
-  if (ok.length > 1) out.push('<b>' + ok[0].c + '</b> هو المركز الأبطأ (' + fmtDur(ok[0].r.avg) + ') مقابل ' + ok[ok.length - 1].c + ' (' + fmtDur(ok[ok.length - 1].r.avg) + ')' + (A.peak && A.peak.x >= 1.5 ? '، والضغط تركّز بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b> بـ' + A.peak.x + '× المعدل.' : '.'));
-  else if (A.peak && A.peak.x >= 1.5) out.push('الضغط تركّز بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b>: حوالي ' + A.peak.perHour + ' بلاغ بالساعة، يعني <b>' + A.peak.x + '×</b> باقي اليوم.');
+  if (ok.length > 1) out.push('<b>' + ok[0].c + '</b> هو المركز الأبطأ (' + fmtDur(ok[0].r.avg) + ') مقابل ' + ok[ok.length - 1].c + ' (' + fmtDur(ok[ok.length - 1].r.avg) + ')' + (A.peak && A.peak.x >= 1.5 ? '، وتركّز الضغط بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b> بـ' + A.peak.x + '× المعدل.' : '.'));
+  else if (A.peak && A.peak.x >= 1.5) out.push('تركّز الضغط بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b>: بمعدل ' + A.peak.perHour + ' بلاغًا في الساعة، أي <b>' + A.peak.x + '×</b> باقي اليوم.');
   /* حدث تذاكر مجمّعة (فصل مغذي محتمل): أكثف تجمّع خلال ساعة */
   const mass = A.F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').sort((x, y) => x.start - y.start);
   if (mass.length >= 10) {
@@ -59,22 +59,22 @@ export function keyMessages(A, focus, T) {
     for (let i = 0, j = 0; i < mass.length; i++) { while (mass[i].start - mass[j].start > 60 * 60000) j++; if (i - j + 1 > best[1] - best[0]) best = [j, i + 1]; }
     const C = mass.slice(best[0], best[1]), cc = C.filter(f => !f.open), sub = A.F.filter(f => f.kind === 'بلاغ مشترك' && !f.open);
     const avgOf = L => L.length ? Math.round(L.reduce((x, f) => x + f.dur, 0) / L.length) : 0;
-    if (C.length >= 10) out.push('<b>' + C.length + ' تذكرة مجمّعة</b> بين ' + fmtClock(C[0].start) + ' و' + fmtClock(C[C.length - 1].start) + ' على ' + new Set(C.map(f => f.tr)).size + ' محول (الغالب فصل مغذي)، متوسط إغلاقها <b>' + fmtDur(avgOf(cc)) + '</b> مقابل ' + fmtDur(avgOf(sub)) + ' لبلاغات المشتركين — وهي اللي رفعت المتوسط العام' + (mass.length > C.length ? ' (إجمالي المجمّعة اليوم ' + mass.length + ')' : '') + '.');
+    if (C.length >= 10) out.push('<b>' + C.length + ' تذكرة مجمّعة</b> بين ' + fmtClock(C[0].start) + ' و' + fmtClock(C[C.length - 1].start) + ' على ' + new Set(C.map(f => f.tr)).size + ' محولًا (يرجّح فصل مغذٍ)، ومتوسط إغلاقها <b>' + fmtDur(avgOf(cc)) + '</b> مقابل ' + fmtDur(avgOf(sub)) + ' لبلاغات المشتركين' + (avgOf(cc) > avgOf(sub) ? '، وقد رفعت المتوسط العام' : '') + (mass.length > C.length ? ' (إجمالي المجمّعة اليوم ' + mass.length + ')' : '') + '.');
   }
   const exposed = A.F.filter(f => f.dur > 180).length, near = A.F.filter(f => f.open && f.dur >= 150 && f.dur <= 180).length;
-  out.push(exposed ? '<b>' + exposed + ' بلاغ تجاوز 3 ساعات</b> (تعرّض نظامي)' + (near ? ' و' + near + ' بلاغ مفتوح قريب من الحد' : '') + '؛ يلزم توثيق سبب التأخير لكل منها خلال 5 أيام عمل.'
-    : near ? '<b>' + near + ' بلاغ مفتوح قريب من حد الـ3 ساعات</b> — أولوية فورية.' : 'ما فيه أي بلاغ تجاوز المعيار النظامي (3 ساعات) ✓');
+  out.push(exposed ? '<b>' + exposed + ' بلاغ تجاوز 3 ساعات</b> (تعرّض نظامي)' + (near ? ' و' + near + (near > 2 && near < 11 ? ' بلاغات مفتوحة قريبة' : ' بلاغًا مفتوحًا قريبًا') + ' من الحد' : '') + '؛ ويتعين توثيق سبب التأخير لكل منها خلال 5 أيام عمل.'
+    : near ? '<b>' + near + ' بلاغ مفتوح قريب من حد الـ3 ساعات</b> — أولوية فورية.' : 'لم يتجاوز أي بلاغ المعيار النظامي (3 ساعات) ✓');
   return out;
 }
 const fmtClock = t => new Date(t).toLocaleTimeString('ar-SA-u-nu-latn', { hour: '2-digit', minute: '2-digit' });
-const spanTxt = A => Math.round((A.t1 - A.t0) / 3600000) + ' ساعات';
+const spanTxt = A => { const h = Math.round((A.t1 - A.t0) / 3600000); return h + (h > 2 && h < 11 ? ' ساعات' : ' ساعة'); };
 
 /* التوصيات: إجراء + سبب + مسؤول + أولوية */
 export function recommendations(A, focus, T, extra = {}) {
   const R = [], F = A.F, FC = F.filter(f => f.center === focus);
   const LVN = { 2: 'استعداد', 3: 'حدث كبير', 4: 'حدث شامل' };
   if (extra.sugLv && extra.sugLv > (extra.level || 1)) R.push({ p: 1, t: 'إعلان المستوى ' + extra.sugLv + ' (' + LVN[extra.sugLv] + ')', why: A.all.open + ' بلاغ مفتوح مقابل معدل يومي ' + extra.B0 + ' (' + Math.round(A.all.open / extra.B0 * 10) / 10 + '×)', who: 'رئيس القسم' });
-  if (A.inflow > A.outflow && A.inflow >= 10) R.push({ p: 1, t: 'نقل فرق إضافية للمقاولين الأعلى ضغطًا', why: 'آخر ساعة ورد ' + A.inflow + ' وانقفل ' + A.outflow + ' — الفجوة تكبر', who: 'المنسق الميداني' });
+  if (A.inflow > A.outflow && A.inflow >= 10) R.push({ p: 1, t: 'نقل فرق إضافية للمقاولين الأعلى ضغطًا', why: 'خلال الساعة الأخيرة ورد ' + A.inflow + ' وأُغلق ' + A.outflow + ' — الفجوة في ازدياد', who: 'المنسق الميداني' });
   const near = F.filter(f => f.open && f.dur >= 120).sort((x, y) => y.dur - x.dur);
   if (near.length) R.push({ p: 1, t: 'تصعيد فوري لـ' + near.length + ' بلاغ مفتوح تجاوز ساعتين', why: 'أقدمها ' + fmtDur(near[0].dur) + ' (' + (near[0].co || 'بدون فني') + ' · ' + near[0].center + ')', who: 'قائد الحدث + المشرف' });
   const board = contractorBoard(FC).filter(r => r.real && r.closed >= 5);
@@ -82,14 +82,14 @@ export function recommendations(A, focus, T, extra = {}) {
   weak.slice(0, 2).forEach(r => R.push({ p: 1, t: 'اجتماع أداء مع ' + r.k + ' وتسجيل المخالفات', why: r.n + ' بلاغ، ' + r.within[0] + '% خلال ساعة، ' + r.over120 + ' تجاوز ساعتين (درجة ' + r.score + '/100)', who: 'رئيس القسم' }));
   if (A.peak && A.peak.x >= 1.8) R.push({ p: 2, t: 'تعزيز الفرق بين ' + A.peak.from + ':00 و' + A.peak.to + ':00', why: 'البلاغات ' + A.peak.x + '× باقي اليوم (' + A.peak.perHour + ' بالساعة)', who: 'المقاولين' });
   const accs = [...groupBy(FC.filter(f => f.acc), f => f.acc)].filter(([, L]) => L.length >= 3);
-  accs.slice(0, 2).forEach(([, L]) => R.push({ p: 1, t: 'زيارة ميدانية وفحص جذري للمحول ' + (L[0].ref.tr || ''), why: 'نفس المشترك بلّغ ' + L.length + ' مرات' + (L.some(f => f.open) ? ' وللحين مفتوح' : ''), who: 'المشرف + المقاول' }));
+  accs.slice(0, 2).forEach(([, L]) => R.push({ p: 1, t: 'زيارة ميدانية وفحص جذري للمحول ' + (L[0].ref.tr || ''), why: 'المشترك نفسه بلّغ ' + L.length + ' مرات' + (L.some(f => f.open) ? ' وما زال مفتوحًا' : ''), who: 'المشرف + المقاول' }));
   const trs = [...groupBy(FC.filter(f => f.tr), f => f.tr)].filter(([, L]) => L.length >= 4).sort((x, y) => y[1].length - x[1].length);
   if (trs.length) R.push({ p: 2, t: 'إدراج ' + trs.length + ' محول في قائمة الفحص الوقائي', why: trs.slice(0, 3).map(([k, L]) => k + ' (' + L.length + ')').join('، '), who: 'التخطيط والصيانة' });
-  (extra.feeders || []).filter(g => g.L.length >= 5 && g.zones >= 2).slice(0, 2).forEach(g => R.push({ p: 1, t: 'فحص المغذي ' + g.k + ' (جهد متوسط)', why: g.L.length + ' بلاغ على ' + g.zones + ' زون و' + g.trs + ' محول' + (g.open ? '، منها ' + g.open + ' مفتوح' : ''), who: 'تحكم الجهد المتوسط' }));
+  (extra.feeders || []).filter(g => g.L.length >= 5 && g.zones >= 2).slice(0, 2).forEach(g => R.push({ p: 1, t: 'فحص المغذي ' + g.k + ' (جهد متوسط)', why: g.L.length + ' بلاغ على ' + g.zones + ' منطقة و' + g.trs + ' محول' + (g.open ? '، منها ' + g.open + ' مفتوح' : ''), who: 'تحكم الجهد المتوسط' }));
   const nt = F.filter(f => !f.open && !f.tech).length;
-  if (nt >= Math.max(5, F.length * 0.1)) R.push({ p: 3, t: 'مراجعة ' + nt + ' بلاغ انقفل بدون فني مسند', why: 'التحقق إن الإغلاق صحيح وما يتكرر البلاغ', who: 'منسق البلاغات' });
-  if (extra.noCause) R.push({ p: 3, t: 'تسجيل سبب العطل لـ' + extra.noCause + ' بلاغ مقفل', why: 'بدونه ما يتحدد نوع العمل (إحلال/تعزيز/صيانة)', who: 'المشرفين' });
-  if (extra.located != null && extra.located < 60) R.push({ p: 3, t: 'استكمال إحداثيات المحولات من GIS', why: 'المعروف موقعه ' + extra.located + '% بس من البلاغات', who: 'نظم المعلومات الجغرافية' });
+  if (nt >= Math.max(5, F.length * 0.1)) R.push({ p: 3, t: 'مراجعة ' + nt + ' بلاغًا أُغلق دون إسناد فني', why: 'التحقق من صحة الإغلاق وعدم تكرار البلاغ', who: 'منسق البلاغات' });
+  if (extra.noCause) R.push({ p: 3, t: 'تسجيل سبب العطل لـ' + extra.noCause + ' بلاغ مقفل', why: 'لا يمكن تحديد نوع العمل (إحلال/تعزيز/صيانة) دونه', who: 'المشرفين' });
+  if (extra.located != null && extra.located < 60) R.push({ p: 3, t: 'استكمال إحداثيات المحولات من GIS', why: 'المعروف موقعه ' + extra.located + '% فقط من البلاغات', who: 'نظم المعلومات الجغرافية' });
   return R.sort((a, b) => a.p - b.p);
 }
 export const PRIO = { 1: 'عالية', 2: 'متوسطة', 3: 'منخفضة' };

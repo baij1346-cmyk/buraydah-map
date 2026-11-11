@@ -58,7 +58,7 @@ function render() {
   box.querySelector('#slCopy').onclick = () => copy(waText(X));
 }
 function waText(X) {
-  let s = '⏱️ متابعة حد الـ3 ساعات — مركز أبو بندر للعمليات\n\nتجاوز 3 ساعات: ' + X.over.length + ' | قريب من الحد: ' + X.near.length + ' | تجاوز ساعتين: ' + X.next.length + '\n';
+  let s = '⏱️ متابعة حد الـ3 ساعات — TBG\n\nتجاوز 3 ساعات: ' + X.over.length + ' | قريب من الحد: ' + X.near.length + ' | تجاوز ساعتين: ' + X.next.length + '\n';
   const line = f => '• ' + (f.src === 'sec' ? f.id : '#' + f.id) + ' — ' + fmtDur(f.dur) + ' — ' + (f.co || 'بدون فني') + (f.sup ? ' — ' + f.sup : '') + (f.ref.tr ? ' — ' + f.ref.tr : '') + '\n';
   const oo = X.over.filter(f => f.open);
   if (oo.length) { s += '\n🔴 مفتوح وتجاوز 3 ساعات:\n'; oo.forEach(f => s += line(f)); }
@@ -67,7 +67,7 @@ function waText(X) {
 }
 function exportFile(X) {
   if (!X.over.length && !X.near.length) return toast('ما فيه بلاغات للتصدير');
-  const rows = [['سجل البلاغات المتجاوزة للمعيار النظامي (3 ساعات) — مركز أبو بندر للعمليات'], ['تاريخ التصدير', new Date().toLocaleString('en-GB'), 'الفترة', period ? 'آخر ' + period + ' يوم' : 'الكل'], [],
+  const rows = [['سجل البلاغات المتجاوزة للمعيار النظامي (3 ساعات) — TBG'], ['تاريخ التصدير', new Date().toLocaleString('en-GB'), 'الفترة', period ? 'آخر ' + period + ' يوم' : 'الكل'], [],
     ['م', 'رقم المهمة', 'المركز', 'المحول', 'المحطة', 'المغذي', 'وقت البلاغ', 'وقت الإغلاق', 'المدة (دقيقة)', 'التجاوز (دقيقة)', 'الحالة', 'المقاول', 'المشرف', 'يوم مطر', 'سبب التأخير']];
   X.over.concat(X.near).forEach((f, i) => rows.push([i + 1, f.id, f.center, f.ref.tr || '', f.net ? f.net.sub : '', f.net ? f.net.feeder : '', new Date(f.start).toLocaleString('en-GB'),
     f.open ? 'مفتوح' : new Date(f.end).toLocaleString('en-GB') + (f.uncertain ? ' (تقريبي)' : ''), f.dur, Math.max(0, f.dur - LIMIT), f.dur > LIMIT ? 'تجاوز' : 'قريب من الحد', f.co || 'بدون فني', f.sup || '', f.rain ? 'نعم' : 'لا', delayOf(f)]));

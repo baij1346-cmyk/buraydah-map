@@ -66,7 +66,7 @@ function render() {
   let h = '<div class="row no-print">' + '<div class="seg">' + D.slice(0, 7).map(x => '<button data-d="' + x + '" aria-pressed="' + (x === day) + '">' + x.slice(5) + '</button>').join('') + '<button data-d="all" aria-pressed="' + (day === 'all') + '">تقرير الحدث كامل</button></div>' +
     '<span class="spacer"></span><div class="seg"><button data-v="0" aria-pressed="' + !full + '">مختصر</button><button data-v="1" aria-pressed="' + full + '">مفصّل</button></div><button class="tbtn primary" id="brPrint"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>التقرير التنفيذي (PDF)</button><a class="tbtn" id="brWa" target="_blank" rel="noopener">واتساب</a><button class="tbtn" id="brCopy">نسخ</button></div>';
   /* الغلاف */
-  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>مركز أبو بندر للعمليات · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>' + (EV ? 'تقرير نهاية الحدث' + (F.some(f => f.rain) ? ' — حالة الأمطار' : '') : 'تقرير أداء معالجة الأعطال') + '</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
+  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>TBG · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>' + (EV ? 'تقرير نهاية الحدث' + (F.some(f => f.rain) ? ' — حالة الأمطار' : '') : 'تقرير أداء معالجة الأعطال') + '</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
   /* الخلاصة التنفيذية */
   h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>الخلاصة التنفيذية</h3><ol class="msgs">' + keyMessages(A, center, T).map(m => '<li>' + m + '</li>').join('') + '</ol></section>';
   /* مؤشرات الأداء مقابل الأهداف */
@@ -78,7 +78,7 @@ function render() {
   const AR = areas(FC); curCells = AR.cells;
   if (AR.cells.length) {
     h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>المناطق الأكثر تأثرًا — ' + center + ' <small>' + AR.located + ' من ' + FC.length + ' بلاغ معروف موقعه</small></h3><div class="card area-card"><div class="area-map" id="areaMap"></div>' +
-      '<div class="area-lg"><span><i style="background:#F4A259"></i>أقل</span><span><i style="background:#EA580C"></i>متوسط</span><span><i style="background:#B91C1C"></i>أكثر</span><span>الرقم = عدد البلاغات في المربع (حوالي 1 كم)</span></div></div>' +
+      '<div class="area-lg"><span><i style="background:#F4A259"></i>أقل</span><span><i style="background:#EA580C"></i>متوسط</span><span><i style="background:#B91C1C"></i>أكثر</span><span>الرقم = عدد البلاغات ضمن نطاق 1 كم تقريبًا</span></div></div>' +
       '<div class="tbl-wrap"><table class="dtable"><thead><tr><th>#</th><th class="n">البلاغات</th><th class="n">تجاوز ساعتين</th><th>أكثر المحولات</th><th>المقاول</th><th class="no-print">الموقع</th></tr></thead><tbody>' +
       AR.cells.slice(0, 6).map((c, i) => { const trs = [...groupBy(c.L.filter(f => f.tr), f => f.tr)].sort((x, y) => y[1].length - x[1].length).slice(0, 2);
         return '<tr><td><b>' + (i + 1) + '</b></td><td class="n"><b>' + c.L.length + '</b></td><td class="n">' + (c.L.filter(f => f.dur > 120).length || '—') + '</td><td><span class="ltr">' + trs.map(([k, L]) => esc(trLabel(k)) + ' (' + L.length + ')').join('، ') + '</span></td><td>' + esc([...new Set(c.L.map(f => f.co).filter(Boolean))].slice(0, 2).join('، ') || '—') + '</td><td class="no-print"><a target="_blank" rel="noopener" href="https://www.google.com/maps?q=' + c.lat.toFixed(5) + ',' + c.lng.toFixed(5) + '">فتح</a></td></tr>'; }).join('') + '</tbody></table></div></section>';
@@ -89,7 +89,7 @@ function render() {
     h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>تطور البلاغات المفتوحة <small>في كل تقرير' + (up ? ' · في تصاعد' : '') + '</small></h3><div class="card"><div class="hr-wrap"><div class="bars hr" style="direction:ltr">' +
       A.series.map((x, i) => '<div class="' + (i === A.series.length - 1 ? 'rain' : '') + '" style="height:' + (100 * x.n / mx) + '%" data-t="' + fmtTime(x.at) + ' — ' + x.n + ' مفتوح"><span>' + x.n + '</span></div>').join('') + '</div>' +
       '<div class="hr-ax" style="direction:ltr">' + A.series.map((x, i, Z) => { const st = Math.ceil(Z.length / 12); return '<span>' + (i % st === 0 || i === Z.length - 1 ? new Date(x.at).toTimeString().slice(0, 5) : '') + '</span>'; }).join('') + '</div></div>' +
-      '<p class="hint">آخر ساعة: ورد <b>' + A.inflow + '</b> بلاغ وانقفل <b>' + A.outflow + '</b>.' + (A.inflow > A.outflow ? ' الوارد أكثر من المنقفل، يعني المفتوح بيزيد.' : '') + '</p></div></section>';
+      '<p class="hint">خلال الساعة الأخيرة: ورد <b>' + A.inflow + '</b> بلاغًا وأُغلق <b>' + A.outflow + '</b>.' + (A.inflow > A.outflow ? ' الوارد يفوق المُغلق، ما يعني استمرار ارتفاع المفتوح.' : '') + '</p></div></section>';
   }
   /* المراكز */
   const ok = A.centers.filter(x => x.r.closed);
@@ -107,7 +107,7 @@ function render() {
   h += B.length ? '<div class="tbl-wrap"><table class="dtable"><thead><tr><th>المقاول</th><th class="n">البلاغات</th><th class="n">مفتوح</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">تجاوز ساعتين</th><th class="n">الدرجة</th></tr></thead><tbody>' +
     B.map(r => '<tr' + (r.real ? '' : ' class="muted"') + '><td>' + esc(r.k) + '</td><td class="n"><b>' + r.n + '</b></td><td class="n">' + (r.open || '—') + '</td><td class="n">' + (r.closed ? fmtDur(r.avg) : '—') + '</td><td class="n">' + (r.closed ? r.within[0] + '%' : '—') + '</td><td class="n">' + (r.over120 || '—') + '</td><td class="n">' + (r.real && r.score != null ? '<span class="rag sm ' + r.s + '">' + r.score + '</span>' : '—') + '</td></tr>').join('') + '</tbody></table></div>' +
     '<div class="card rep-full"><p class="pg" style="margin:0">توزيع مدة الإغلاق لكل مقاول</p>' + stack100(B.filter(r => r.n >= 3).map(r => ({ label: r.k, parts: r.b }))) + '<p class="hint">الدرجة من 100 = نصفها نسبة الإغلاق خلال ساعة، ونصفها الالتزام بعدم تجاوز ساعتين. أخضر ≥ 75، برتقالي ≥ 60.</p></div>'
-    : '<div class="empty">ما فيه بلاغات لهالمركز.</div>';
+    : '<div class="empty">لا توجد بلاغات لهذا المركز.</div>';
   h += '</section>';
   /* التركّز على المغذيات (من تقرير ربط LV بشبكة MV) */
   const withNet = F.filter(f => f.net && f.net.feeder);
@@ -116,7 +116,7 @@ function render() {
     h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>التركّز على المغذيات <small>' + withNet.length + ' من ' + F.length + ' بلاغ مربوط بالشبكة</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المحطة / المغذي</th><th class="n">البلاغات</th><th class="n">مفتوح</th><th class="n">زونات</th><th class="n">محولات</th><th>أكثر نقطة عزل</th></tr></thead><tbody>' +
       G.slice(0, 10).map(g => { const iso = [...groupBy(g.L.filter(f => f.net.iso), f => f.net.iso)].sort((a, b) => b[1].length - a[1].length)[0];
         return '<tr><td class="ltr" style="text-align:right"><b>' + esc(g.k) + '</b></td><td class="n"><b>' + g.L.length + '</b></td><td class="n">' + (g.open || '—') + '</td><td class="n">' + g.zones + '</td><td class="n">' + g.trs + '</td><td class="ltr" style="text-align:right">' + (iso ? esc(iso[0]) + ' (' + iso[1].length + ')' : '—') + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-      '<p class="hint">مغذي عليه بلاغات كثيرة على أكثر من زون = غالبًا مشكلة جهد متوسط (فصل/تذبذب) مو أعطال فردية.</p></section>';
+      '<p class="hint">تعدد البلاغات على مغذٍ واحد عبر أكثر من منطقة يرجّح وجود مشكلة في الجهد المتوسط (فصل أو تذبذب) لا أعطالًا فردية.</p></section>';
     A.feeders = G;
   }
   if (EV) {
@@ -153,7 +153,7 @@ function render() {
   if (open.length) h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>المفتوح وقت آخر تقرير — ' + center + ' <small>' + open.length + '</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المهمة</th><th>المحول</th><th>المقاول</th><th class="n">العمر</th><th>التصعيد</th></tr></thead><tbody>' +
     open.slice(0, 10).map(f => '<tr><td class="ltr">' + esc(f.id) + '</td><td class="ltr">' + esc(f.ref.tr || '') + '</td><td>' + esc(f.co || 'بدون فني') + '</td><td class="n" style="' + (f.dur >= 120 ? 'color:var(--bad);font-weight:700' : '') + '">' + fmtDur(f.dur) + '</td><td style="font-size:.78rem">' + escalation(f.dur).t + '</td></tr>').join('') + '</tbody></table></div></section>';
   h += '<div class="rep-full">' + hotspotsHtml(FC, center) + '</div>';
-  h += '<section class="rep-sec rep-method rep-full"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة» من إدارة كهرباء القصيم. كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ اللي يختفي من التقرير التالي يُحتسب منحلًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (دقة ± ' + Math.round(Math.max(...A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at), 0) / 120000) + ' د). البلاغات اللي انفتحت وانحلت قبل أول تقرير ما تظهر. المقاول مستنتج من اسم الفني. الأهداف قابلة للتعديل من الإعدادات.</p></section>';
+  h += '<section class="rep-sec rep-method rep-full"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة» من إدارة كهرباء القصيم. كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ الذي يختفي من التقرير التالي يُحتسب مُغلقًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (دقة ± ' + Math.round(Math.max(...A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at), 0) / 120000) + ' د). البلاغات التي فُتحت وأُغلقت قبل أول تقرير لا تظهر. المقاول مستنتج من اسم الفني. الأهداف قابلة للتعديل من الإعدادات.</p></section>';
   box.innerHTML = h; box.classList.toggle('rep-compact', !full);
   drawAreas();
   const text = summary(A);
@@ -175,7 +175,7 @@ export function hotspotsHtml(FC, label) {
   if (!trs.length && !accs.length) return '';
   return '<p class="sec-title">النقاط الساخنة' + (label ? ' — ' + label : '') + '</p><div class="card"><ul class="insights">' +
     accs.slice(0, 5).map(([, L]) => '<li class="r">حساب واحد بلّغ <b>' + L.length + ' مرات</b> على محول <span class="ltr">' + esc(L[0].ref.tr || '') + '</span>' + (L.some(f => f.open) ? ' — <b>وللحين مفتوح</b>: العطل ما انحل من جذوره' : '') + '</li>').join('') +
-    trs.slice(0, 8).map(([k, L]) => '<li>محول <span class="ltr">' + esc(trLabel(k)) + '</span>' + (label ? '' : ' (' + L[0].center + ')') + ': <b>' + L.length + ' بلاغات</b> (' + [...new Set(L.map(f => f.co || 'بدون فني'))].join('، ') + ')' + (L.some(f => f.open) ? ' · فيه مفتوح' : '') + '</li>').join('') + '</ul></div>';
+    trs.slice(0, 8).map(([k, L]) => '<li>محول <span class="ltr">' + esc(trLabel(k)) + '</span>' + (label ? '' : ' (' + L[0].center + ')') + ': <b>' + L.length + ' بلاغات</b> (' + [...new Set(L.map(f => f.co || 'بدون فني'))].join('، ') + ')' + (L.some(f => f.open) ? ' · يوجد مفتوح' : '') + '</li>').join('') + '</ul></div>';
 }
 export const latestDay = () => days()[0] || '';
 
@@ -210,10 +210,10 @@ function drawAreas() {
 /* دروس الحدث: تُستخرج من الأرقام */
 function lessons(A, FC, TR) {
   const out = [], late = FC.filter(f => f.dur > 120), nt = late.filter(f => !f.tech).length;
-  if (late.length >= 5 && pct(nt, late.length) >= 30) out.push('<b>الإسناد هو عنق الزجاجة:</b> ' + pct(nt, late.length) + '% من البلاغات اللي تجاوزت ساعتين (' + nt + ' من ' + late.length + ') ما كان مسند لها فني. المطلوب: آلية إسناد سريعة وقت الذروة ومتابعة المشرف كل 30 دقيقة.');
+  if (late.length >= 5 && pct(nt, late.length) >= 30) out.push('<b>الإسناد هو عنق الزجاجة:</b> ' + pct(nt, late.length) + '% من البلاغات التي تجاوزت ساعتين (' + nt + ' من ' + late.length + ') ما كان مسند لها فني. المطلوب: آلية إسناد سريعة وقت الذروة ومتابعة المشرف كل 30 دقيقة.');
   const sr = A.series || [], pk = sr.length ? sr.reduce((m, x) => x.n > m.n ? x : m, sr[0]) : null;
-  if (pk && sr.length >= 3) out.push('<b>ذروة المفتوح:</b> ' + pk.n + ' بلاغ الساعة ' + fmtTime(pk.at) + (sr[0].n ? '، يعني ' + Math.round(10 * pk.n / Math.max(1, sr[0].n)) / 10 + '× بداية الحدث' : '') + '. جاهزية الفرق الإضافية لازم تسبق هالوقت.');
-  if (A.peak) out.push('<b>وقت الضغط:</b> بين ' + A.peak.from + ':00 و' + A.peak.to + ':00 بمعدل ' + A.peak.perHour + ' بلاغ بالساعة. ورديات المقاولين تُعزّز في هالنافذة.');
+  if (pk && sr.length >= 3) out.push('<b>ذروة المفتوح:</b> ' + pk.n + ' بلاغ الساعة ' + fmtTime(pk.at) + (sr[0].n ? '، أي ' + Math.round(10 * pk.n / Math.max(1, sr[0].n)) / 10 + '× بداية الحدث' : '') + '. جاهزية الفرق الإضافية لازم تسبق هالوقت.');
+  if (A.peak) out.push('<b>وقت الضغط:</b> بين ' + A.peak.from + ':00 و' + A.peak.to + ':00 بمعدل ' + A.peak.perHour + ' بلاغًا في الساعة؛ ويُوصى بتعزيز ورديات المقاولين في هذه الفترة.');
   if (TR.length) out.push('<b>' + TR.length + ' محول تكرر عليه 3 بلاغات أو أكثر</b> (أعلاها ' + trLabel(TR[0][0]) + ' بـ' + TR[0][1].length + '): تدخل برنامج العزل والإحكام قبل الموسم.');
   const B = contractorBoard(FC).filter(r => r.real && r.closed >= 5);
   if (B.length > 1) out.push('<b>تفاوت المقاولين:</b> الأفضل ' + esc(B[0].k) + ' (' + B[0].score + '/100) والأضعف ' + esc(B[B.length - 1].k) + ' (' + B[B.length - 1].score + '/100). يُراجع توزيع الفرق والمناطق حسب الأداء.');
@@ -228,8 +228,8 @@ function lessons(A, FC, TR) {
 function insights(A, focus) {
   const out = [], F = A.F, a = A.all;
   const ok = A.centers.filter(x => x.r.closed >= 5).sort((x, y) => y.r.avg - x.r.avg);
-  if (ok.length > 1) out.push({ t: '<b>' + ok[0].c + '</b> الأبطأ: متوسط الإغلاق ' + fmtDur(ok[0].r.avg) + ' و' + ok[0].r.within[0] + '% بس انقفلت خلال ساعة (الأسرع ' + ok[ok.length - 1].c + ' ' + fmtDur(ok[ok.length - 1].r.avg) + ').', lv: ok[0].c === focus ? 'r' : '' });
-  if (A.peak && A.peak.x >= 1.5) out.push({ t: 'الذروة من <b>' + A.peak.from + ':00 إلى ' + A.peak.to + ':00</b>: حوالي ' + A.peak.perHour + ' بلاغ بالساعة، يعني <b>' + A.peak.x + '×</b> باقي اليوم.' });
+  if (ok.length > 1) out.push({ t: '<b>' + ok[0].c + '</b> الأبطأ: متوسط الإغلاق ' + fmtDur(ok[0].r.avg) + ' و' + ok[0].r.within[0] + '% فقط أُغلقت خلال ساعة (الأسرع ' + ok[ok.length - 1].c + ' ' + fmtDur(ok[ok.length - 1].r.avg) + ').', lv: ok[0].c === focus ? 'r' : '' });
+  if (A.peak && A.peak.x >= 1.5) out.push({ t: 'الذروة من <b>' + A.peak.from + ':00 إلى ' + A.peak.to + ':00</b>: بمعدل ' + A.peak.perHour + ' بلاغ بالساعة، أي <b>' + A.peak.x + '×</b> باقي اليوم.' });
   const FC = F.filter(f => f.center === focus), T = table(FC, 'co').filter(r => r.closed >= 5 && r.k !== 'بدون فني' && r.k !== 'غير محدد');
   if (T.length > 1) {
     const over = k => FC.filter(f => f.co === k && f.dur > 120).length;
@@ -240,11 +240,11 @@ function insights(A, focus) {
   const oldest = F.filter(f => f.open).sort((x, y) => y.dur - x.dur)[0];
   if (oldest && oldest.dur >= 90) out.push({ t: 'أقدم بلاغ مفتوح: <span class="ltr">' + esc(oldest.id) + '</span> في ' + oldest.center + ' (' + esc(oldest.co || 'بدون فني') + ') — <b>' + fmtDur(oldest.dur) + '</b>' + (oldest.dur >= 150 ? '، قريب من حد الـ3 ساعات النظامي' : '') + '.', lv: 'r' });
   const longest = F.filter(f => !f.open).sort((x, y) => y.dur - x.dur)[0];
-  if (longest && longest.dur > 180) out.push({ t: 'أطول بلاغ انقفل: ' + fmtDur(longest.dur) + ' في ' + longest.center + ' (' + esc(longest.co || 'بدون فني') + ').' });
+  if (longest && longest.dur > 180) out.push({ t: 'أطول بلاغ مُغلق: ' + fmtDur(longest.dur) + ' في ' + longest.center + ' (' + esc(longest.co || 'بدون فني') + ').' });
   const mass = groupBy(F.filter(f => f.kind === 'تذكرة مجمعة'), f => f.center);
   mass.forEach((L, c) => { if (L.length >= 10) out.push({ t: '<b>' + c + '</b>: ' + L.length + ' تذكرة مجمّعة بين ' + fmtTime(Math.min(...L.map(f => f.start))) + ' و' + fmtTime(Math.max(...L.map(f => f.start))) + ' — الغالب فصل مغذي.' }); });
   const nt = F.filter(f => !f.tech && !f.open).length;
-  if (nt >= 5) out.push({ t: nt + ' بلاغ انقفل بدون فني مسند (الغالب رجعت الكهرباء عن بعد).' });
+  if (nt >= 5) out.push({ t: nt + ' بلاغًا أُغلق دون إسناد فني (يرجّح عودة التيار عن بُعد).' });
   return out;
 }
 
