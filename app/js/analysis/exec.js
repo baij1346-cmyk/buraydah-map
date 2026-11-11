@@ -44,7 +44,9 @@ export function keyMessages(A, focus, T) {
   const out = [], a = A.all;
   /* حدث جاري: المفتوح يتصاعد */
   const sr = A.series || [];
-  if (sr.length >= 3 && sr[sr.length - 1].n >= 1.5 * Math.max(1, sr[0].n)) out.push('<b>الحدث في تصاعد:</b> المفتوح ارتفع من <b>' + sr[0].n + '</b> (' + fmtClock(sr[0].at) + ') إلى <b>' + sr[sr.length - 1].n + '</b> (' + fmtClock(sr[sr.length - 1].at) + ')' + (A.inflow != null ? '، وآخر ساعة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' انقفل.' : '.'));
+  const pk = sr.length ? sr.reduce((m, x) => x.n > m.n ? x : m, sr[0]) : null, last = sr[sr.length - 1];
+  if (sr.length >= 3 && pk !== last && last.n <= .6 * pk.n) out.push('<b>الحدث في تراجع:</b> المفتوح نزل من ذروة <b>' + pk.n + '</b> (' + fmtClock(pk.at) + ') إلى <b>' + last.n + '</b> (' + fmtClock(last.at) + ')' + (A.inflow != null ? '، وآخر ساعة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' انقفل' : '') + '.');
+  else if (sr.length >= 3 && sr[sr.length - 1].n >= 1.5 * Math.max(1, sr[0].n)) out.push('<b>الحدث في تصاعد:</b> المفتوح ارتفع من <b>' + sr[0].n + '</b> (' + fmtClock(sr[0].at) + ') إلى <b>' + sr[sr.length - 1].n + '</b> (' + fmtClock(sr[sr.length - 1].at) + ')' + (A.inflow != null ? '، وآخر ساعة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' انقفل.' : '.'));
   const sc = scorecard(A.F, T), w60 = sc[0], w180 = sc[2];
   out.push('أُغلق <b>' + pct(a.closed, a.n) + '%</b> من ' + a.n + ' بلاغ خلال ' + spanTxt(A) + '، بمتوسط <b>' + fmtDur(a.avg) + '</b>؛ ونسبة الإغلاق خلال ساعة <b>' + a.within[0] + '%</b> مقابل هدف ' + T.w60 + '%' + (w60.s === 'g' ? ' (محقق).' : '.'));
   const ok = A.centers.filter(x => x.r.closed >= 5).sort((x, y) => y.r.avg - x.r.avg);

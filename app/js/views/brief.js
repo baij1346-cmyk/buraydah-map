@@ -85,7 +85,7 @@ function render() {
   }
   /* تطور المفتوح */
   if (A.series.length >= 3) {
-    const mx = Math.max(1, ...A.series.map(x => x.n)), up = A.series[A.series.length - 1].n >= 1.5 * Math.max(1, A.series[0].n);
+    const mx = Math.max(1, ...A.series.map(x => x.n)), pk = Math.max(...A.series.map(x => x.n)), lastN = A.series[A.series.length - 1].n, up = lastN >= 1.5 * Math.max(1, A.series[0].n) && lastN > .6 * pk;
     h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>تطور البلاغات المفتوحة <small>في كل تقرير' + (up ? ' · في تصاعد' : '') + '</small></h3><div class="card"><div class="hr-wrap"><div class="bars hr" style="direction:ltr">' +
       A.series.map((x, i) => '<div class="' + (i === A.series.length - 1 ? 'rain' : '') + '" style="height:' + (100 * x.n / mx) + '%" data-t="' + fmtTime(x.at) + ' — ' + x.n + ' مفتوح"><span>' + x.n + '</span></div>').join('') + '</div>' +
       '<div class="hr-ax" style="direction:ltr">' + A.series.map((x, i, Z) => { const st = Math.ceil(Z.length / 12); return '<span>' + (i % st === 0 || i === Z.length - 1 ? new Date(x.at).toTimeString().slice(0, 5) : '') + '</span>'; }).join('') + '</div></div>' +
