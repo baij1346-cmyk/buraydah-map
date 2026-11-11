@@ -2,6 +2,7 @@
    تشغيل: node tools/lock.mjs <الرقم السري> <مجلد النسخة غير المشفّرة (خارج المستودع)>
    المجلد فيه meta.json و meters.bin و seed/*.json (index.json = قائمة الملفات). */
 import fs from 'fs';
+import zlib from 'zlib';
 import { webcrypto as C } from 'crypto';
 const [pin, src] = process.argv.slice(2);
 if (!pin || !src) { console.error('usage: node tools/lock.mjs <pin> <plainDir>'); process.exit(1); }
@@ -11,7 +12,7 @@ const base = await C.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBK
 const key = await C.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: ITER, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
 async function seal(buf) {
   const iv = C.getRandomValues(new Uint8Array(12));
-  const ct = new Uint8Array(await C.subtle.encrypt({ name: 'AES-GCM', iv }, key, buf));
+  const ct = new Uint8Array(await C.subtle.encrypt({ name: 'AES-GCM', iv }, key, zlib.gzipSync(buf, { level: 9 })));
   return Buffer.concat([iv, ct]);
 }
 const b64 = u => Buffer.from(u).toString('base64');
