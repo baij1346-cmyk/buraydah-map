@@ -1,6 +1,6 @@
 /* قائمة «المزيد» للجوال */
 import { S } from '../store/repo.js';
-import { ROOT } from '../core/ui.js';
+import { forget } from '../core/lock.js';
 import { faults } from '../analysis/model.js';
 const I = {
   sla: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/>',
@@ -17,6 +17,7 @@ function render() {
   const L = [['sla', 'حد 3 ساعات', 'البلاغات المتجاوزة والقريبة، توثيق السبب، ملف الهيئة'], ['review', 'المراجعة', nc ? nc + ' بلاغ مقفل بدون سبب' : 'البلاغات المقفلة، المتكرر، النقاط الساخنة'], ['control', 'الضبط', 'مخالفات المقاولين وتصدير المحضر'],
     ['plan', 'الخطة', 'المستويات، الأدوار، التجهيز، ملف الحدث'], ['settings', 'الإعدادات', 'المقاولين، المحولات، النسخ الاحتياطي']];
   root.querySelector('#moBody').innerHTML = L.map(([k, t, d]) => '<a href="#' + k + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + I[k] + '</svg><span>' + t + '<small>' + d + '</small></span></a>').join('') +
-    '<a href="' + ROOT + 'map.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + I.map + '</svg><span>خريطة المقاولين<small>البحث برقم العداد أو المحطة</small></span></a>';
+    '<a href="#" id="moLock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>قفل هذا الجهاز<small>يطلب الرقم السري مرة ثانية</small></span></a>';
+  root.querySelector('#moLock').onclick = e => { e.preventDefault(); forget(); };
 }
 export default { mount, render };

@@ -468,3 +468,14 @@ details.card summary{cursor:pointer;font-weight:700}
 .hr-ax span{min-width:0;overflow:visible;white-space:nowrap}
 .bars.hr div span{font-size:.6rem}
 #brBody .rep-sec,#brBody .card,#brBody .tbl-wrap{max-width:100%;min-width:0}
+
+/* شاشة الرقم السري */
+.lock{display:flex;flex-direction:column;align-items:center;gap:10px;width:min(320px,100%);padding:28px 22px;border-radius:18px;background:var(--surface,#fff);box-shadow:0 10px 40px rgba(16,24,40,.12);color:var(--text)}
+.lock-ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--accent,#2A6BD6);color:#fff}
+.lock-ic svg{width:26px;height:26px}
+.lock b{font-size:1.05rem}.lock span{color:var(--muted);font-size:.9rem}
+.lock input{width:100%;font:inherit;font-size:1.4rem;letter-spacing:.3em;text-align:center;padding:10px;border:1.5px solid var(--line,#d0d5dd);border-radius:12px;background:var(--bg)}
+.lock input:focus{outline:none;border-color:var(--accent,#2A6BD6)}
+.lock button{width:100%;font:inherit;font-weight:700;padding:11px;border:0;border-radius:12px;background:var(--accent,#2A6BD6);color:#fff;cursor:pointer}
+.lock button:disabled{opacity:.6}
+.lock-err{color:#B42318;font-weight:600}

@@ -2,6 +2,7 @@
 import * as repo from './store/repo.js';
 import { migrateOld } from './store/migrate.js';
 import { loadGeo } from './core/geo.js';
+import { unlock, getEncJson } from './core/lock.js';
 import { readAny } from './sec/pdf.js';
 import { updatedAt } from './sec/reconcile.js';
 import { LV } from './core/const.js';
@@ -133,11 +134,11 @@ document.getElementById('pdfIn').addEventListener('change', e => { const fs = [.
 /* ---------- بيانات منشورة مع الموقع (data/seed) تنضاف مرة وحدة لكل جهاز ---------- */
 async function loadSeeds() {
   try {
-    const list = await fetch('./data/seed/index.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : []);
+    const list = await getEncJson('./data/seed/index.bin', { cache: 'no-store' }).catch(() => []);
     const done = repo.S.settings.seeds || {};
     for (const file of list) {
       if (done[file]) continue;
-      const d = await fetch('./data/seed/' + file).then(r => r.json());
+      const d = await getEncJson('./data/seed/' + file);
       /* التقارير المرفوعة من قبل على هالجهاز (بالأسماء الكاملة) ما نستبدلها بالنسخة المنشورة */
       const have = new Set(repo.S.snapshots.map(x => x.at)), fresh = d.reports.filter(r => !have.has(updatedAt(r.updated)));
       if (fresh.length) await repo.addSnapshots(fresh.map(r => Object.assign(r, { file: d.label })));
@@ -183,6 +184,7 @@ async function checkVersion() {
   const boot = document.getElementById('boot');
   try {
     if (!window.L) throw new Error('leaflet');
+    await unlock();
     const [first] = await Promise.all([repo.init(), loadGeo()]);
     if (first) {
       const moved = await migrateOld();
