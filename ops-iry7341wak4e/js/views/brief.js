@@ -2,13 +2,13 @@
 import { S } from '../store/repo.js';
 import { faults } from '../analysis/model.js';
 import { table, row } from '../analysis/stats.js';
-import { CENTERS, escalation } from '../core/const.js';
+import { CENTERS, escalation, DEL_INFO } from '../core/const.js';
 import { trLabel } from '../core/geo.js';
 import { makeMap } from '../core/ui.js';
 import { esc, fmtDur, fmtTime, isoDay, DAY, HOUR, pct, groupBy, copy } from '../core/util.js';
 import { waLink } from '../core/ui.js';
 import { hbar, stack100, hours } from '../core/charts.js';
-import { DEF_TARGETS, scorecard, contractorBoard, keyMessages, recommendations, RAG_LABEL, PRIO } from '../analysis/exec.js';
+import { isEnded, DEF_TARGETS, scorecard, contractorBoard, keyMessages, recommendations, RAG_LABEL, PRIO } from '../analysis/exec.js';
 
 let root, day = '', center = 'بريدة', full = false, areaMap = null;
 
@@ -57,6 +57,8 @@ function render() {
   if (!D.length) { box.innerHTML = '<div class="hero"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4h6v3H9zM6 6H5v15h14V6h-1"/><path d="M9 12h6M9 16h4"/></svg></div><h3>ما فيه تقارير للحين</h3><p>ارفع تقرير توجيه البلاغات (PDF)، ويطلع هنا ملخص اليوم: المراكز، المقاولين، الذروة، والنقاط الساخنة.</p><label class="tbtn primary" for="pdfIn">رفع التقرير</label></div>'; return; }
   if (day !== 'all' && !D.includes(day)) day = D[0];
   const A = analyzeDay(day), F = A.F, FC = F.filter(f => f.center === center);
+  A.ended = day === 'all' && isEnded(A);
+  A.exclIds = Object.keys(DEL_INFO).filter(k => DEL_INFO[k] >= A.t0 - 6 * HOUR && DEL_INFO[k] <= A.t1); A.excl = A.exclIds.length;
   const dl = t => new Date(t).toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long' });
   const dlabel = isoDay(A.t0) === isoDay(A.t1) ? dl(A.t0) : dl(A.t0) + ' ← ' + dl(A.t1);
   const T = Object.assign({ ...DEF_TARGETS }, S.settings.targets || {}), a = A.all;
@@ -66,7 +68,7 @@ function render() {
   let h = '<div class="row no-print">' + '<div class="seg">' + D.slice(0, 7).map(x => '<button data-d="' + x + '" aria-pressed="' + (x === day) + '">' + x.slice(5) + '</button>').join('') + '<button data-d="all" aria-pressed="' + (day === 'all') + '">تقرير الحدث كامل</button></div>' +
     '<span class="spacer"></span><div class="seg"><button data-v="0" aria-pressed="' + !full + '">مختصر</button><button data-v="1" aria-pressed="' + full + '">مفصّل</button></div><button class="tbtn primary" id="brPrint"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>التقرير التنفيذي (PDF)</button><a class="tbtn" id="brWa" target="_blank" rel="noopener">واتساب</a><button class="tbtn" id="brCopy">نسخ</button></div>';
   /* الغلاف */
-  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>TBG · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>' + (EV ? 'تقرير نهاية الحدث' + (F.some(f => f.rain) ? ' — حالة الأمطار' : '') : 'تقرير أداء معالجة الأعطال') + '</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
+  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>قسم الصيانة والطوارئ · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>' + (EV ? (A.ended ? 'التقرير الختامي' : 'تقرير الحدث') + (F.some(f => f.rain) ? ' — حالة الأمطار' : '') : 'تقرير أداء معالجة الأعطال') + '</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
   /* الخلاصة التنفيذية */
   h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>الخلاصة التنفيذية</h3><ol class="msgs">' + keyMessages(A, center, T).map(m => '<li>' + m + '</li>').join('') + '</ol></section>';
   /* مؤشرات الأداء مقابل الأهداف */
@@ -143,7 +145,8 @@ function render() {
   /* التوصيات */
   const B0 = Math.max(1, S.settings.baseline || 15), wx = S.settings.wx, op = a.open;
   const sugLv = wx === 'red' ? 4 : (wx === 'orange' || op >= 3 * B0) ? 3 : (wx === 'yellow' || op >= 2 * B0) ? 2 : 1;
-  const RC = recommendations(A, center, T, { noCause, located, level: S.event.level || 1, sugLv, B0, feeders: A.feeders });
+  const RC = recommendations(A, center, T, { noCause, located, level: S.event.level || 1, sugLv, B0, feeders: A.feeders })
+    .filter(r => !A.ended || !/إعلان المستوى|نقل فرق إضافية|تصعيد فوري/.test(r.a || r.act || r.t || JSON.stringify(r)));
   if (RC.length) h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>التوصيات والإجراءات</h3><div class="tbl-wrap"><table class="dtable recs lim5"><thead><tr><th>الأولوية</th><th>الإجراء</th><th>المبرر</th><th>المسؤول</th></tr></thead><tbody>' +
     RC.map(r => '<tr><td><span class="prio p' + r.p + '">' + PRIO[r.p] + '</span></td><td><b>' + bidi(r.t) + '</b></td><td>' + bidi(r.why) + '</td><td>' + esc(r.who) + '</td></tr>').join('') + '</tbody></table></div></section>';
   /* ملاحظات تشغيلية */
@@ -153,7 +156,7 @@ function render() {
   if (open.length) h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>المفتوح وقت آخر تقرير — ' + center + ' <small>' + open.length + '</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المهمة</th><th>المحول</th><th>المقاول</th><th class="n">العمر</th><th>التصعيد</th></tr></thead><tbody>' +
     open.slice(0, 10).map(f => '<tr><td class="ltr">' + esc(f.id) + '</td><td class="ltr">' + esc(f.ref.tr || '') + '</td><td>' + esc(f.co || 'بدون فني') + '</td><td class="n" style="' + (f.dur >= 120 ? 'color:var(--bad);font-weight:700' : '') + '">' + fmtDur(f.dur) + '</td><td style="font-size:.78rem">' + escalation(f.dur).t + '</td></tr>').join('') + '</tbody></table></div></section>';
   h += '<div class="rep-full">' + hotspotsHtml(FC, center) + '</div>';
-  h += '<section class="rep-sec rep-method rep-full"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة» من إدارة كهرباء القصيم. كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ الذي يختفي من التقرير التالي يُحتسب مُغلقًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (دقة ± ' + Math.round(Math.max(...A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at), 0) / 120000) + ' د). البلاغات التي فُتحت وأُغلقت قبل أول تقرير لا تظهر. المقاول مستنتج من اسم الفني. الأهداف قابلة للتعديل من الإعدادات.</p></section>';
+  h += '<section class="rep-sec rep-method"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة» من إدارة كهرباء القصيم. كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ الذي يختفي من التقرير التالي يُحتسب مُغلقًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (الدقة عادةً ± ' + (() => { const g = A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at).sort((x, y) => x - y); return g.length ? Math.round(g[g.length >> 1] / 120000) : 0; })() + ' د). البلاغات التي فُتحت وأُغلقت قبل أول تقرير لا تظهر. المقاول مستنتج من اسم الفني. الأهداف قابلة للتعديل من الإعدادات.' + (A.excl ? ' استُبعد من الأرقام ' + A.excl + ' بلاغ بقرار رئيس القسم (' + A.exclIds.join('، ') + ').' : '') + '</p></section>';
   box.innerHTML = h; box.classList.toggle('rep-compact', !full);
   drawAreas();
   const text = summary(A);

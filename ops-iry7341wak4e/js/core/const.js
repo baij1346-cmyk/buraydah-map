@@ -81,4 +81,5 @@ export const DEF_ZONES_TABLE = { 'البشير': [46, 31, 17, 16, 15, 13], 'مس
 /* قواعد الحصر الافتراضية */
 export const DEF_RULES = { replaceN: 3, replaceDays: 90, rainShare: 50, peakShare: 60, peakMonths: [6, 7, 8, 9], minForPattern: 3 };
 /* بلاغات محذوفة بطلب رئيس القسم (ما تدخل في أي إحصائية ولا تقرير) */
-export const DEL_TASKS = new Set(['51439048']);
+export const DEL_INFO = { '51439048': Date.parse('2026-11-10T21:02:00+03:00') }; /* رقم البلاغ: وقت فتحه (للإفصاح في التقرير) */
+export const DEL_TASKS = new Set(Object.keys(DEL_INFO));
