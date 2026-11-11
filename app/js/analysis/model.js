@@ -1,3 +1,4 @@
+import { DEL_TASKS } from '../core/const.js';
 /* توحيد البلاغات (تقرير الكهرباء + اليدوية) في سجل واحد للتحليل */
 import { S } from '../store/repo.js';
 import { zoneOf, trKey, trLoc, parseTr, G } from '../core/geo.js';
@@ -48,6 +49,6 @@ export function faults({ from = 0, to = Infinity, center = '', all = false } = {
   const ex = S.settings.exclude || [];
   /* نطاق القسم الحالي: بريدة فقط (يتغير من الإعدادات) */
   const only = S.settings.onlyBuraydah && !all ? 'بريدة' : '';
-  return a.filter(f => f.start >= from && f.start < to && (!center || f.center === center) && (!only || f.center === only) && !ex.includes(f.co));
+  return a.filter(f => f.start >= from && f.start < to && (!center || f.center === center) && (!only || f.center === only) && !ex.includes(f.co) && !DEL_TASKS.has(String(f.id)));
 }
 export const openFaults = (o = {}) => faults(o).filter(f => f.open);
