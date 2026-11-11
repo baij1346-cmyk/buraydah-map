@@ -1,4 +1,3 @@
-import { forget } from '../core/lock.js';
 /* الإعدادات: المقاولين، ربط الفنيين، مواقع المحولات، التقارير المرفوعة، النسخ الاحتياطي */
 import * as repo from '../store/repo.js';
 import { S, saveSettings } from '../store/repo.js';
@@ -38,14 +37,12 @@ function render() {
   h += '<p class="sec-title">تقارير الكهرباء المرفوعة <small>' + snaps.length + ' تقرير</small></p><div class="card">' +
     (snaps.length ? '<div class="tbl-wrap" style="max-height:280px;overflow:auto;box-shadow:none"><table class="dtable"><thead><tr><th>وقت التحديث</th><th class="n">بلاغات</th><th>الملف</th><th></th></tr></thead><tbody>' +
       snaps.slice(0, 300).map(s => '<tr><td>' + fmtDateTime(s.at) + '</td><td class="n">' + s.rows.length + '</td><td style="font-size:.75rem;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(s.file) + '</td><td><button class="lnk" data-del="' + esc(s.id) + '">حذف</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="hint">ما فيه تقارير مرفوعة. استخدم زر «رفع التقرير» أعلى الشاشة. تقدر ترفع أكثر من ملف مرة وحدة.</p>') + '</div>';
-  h += '<p class="sec-title">الدخول</p><div class="card"><div class="row"><p class="hint" style="flex:1;margin:0">المنصة مقفلة برقم سري، وهذا الجهاز متذكّره. لو الجهاز مو لك أو بتسلّمه لأحد، اقفله.</p><button class="tbtn" id="stLock">قفل هذا الجهاز</button></div></div>';
   h += '<p class="sec-title">البيانات والنسخ الاحتياطي</p><div class="card"><p class="hint">كل البيانات محفوظة في هذا الجهاز فقط (قاعدة بيانات المتصفح). خذ نسخة احتياطية بشكل دوري، وانقلها لجهاز ثاني بـ«استرجاع نسخة».</p><div class="tools">' +
     '<button class="tbtn primary" id="seBak">حفظ نسخة احتياطية</button><label class="tbtn" for="seRes">استرجاع نسخة<input type="file" id="seRes" accept=".json" hidden></label>' +
     '<button class="tbtn danger" id="seReset">تصفير الأعطال</button><button class="tbtn" id="seDemo">تحميل بيانات تجريبية</button><button class="tbtn danger" id="seWipe">مسح كل البيانات</button></div>' +
     '<p class="hint">⚠️ رابط المنصة عام، وملفات أرقام العدادات ومواقعها منشورة معه. قبل ما توزّع الرابط على أحد، نحتاج نضيف تسجيل دخول (المرحلة الثانية).</p></div>';
-  h += '<p class="hint" style="text-align:center">الإصدار 2</p>';
+  h += '<p class="hint" style="text-align:center">الإصدار 2 · <a href="' + ROOT + 'map.html">خريطة المقاولين</a></p>';
   root.querySelector('#seBody').innerHTML = h;
-  root.querySelector('#stLock').onclick = () => forget();
   const $ = s => root.querySelector(s);
   root.querySelectorAll('[data-zco]').forEach(i => i.onchange = () => { p.zones[+i.dataset.zco].co = i.value.trim(); saveSettings(); });
   root.querySelectorAll('[data-zwa]').forEach(i => i.onchange = () => { p.zones[+i.dataset.zwa].wa = arDigits(i.value).replace(/\D/g, '').replace(/^0+/, '').replace(/^5/, '9665'); i.value = p.zones[+i.dataset.zwa].wa; saveSettings(); });

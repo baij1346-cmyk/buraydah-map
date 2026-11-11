@@ -1,4 +1,3 @@
-import { getEnc, getEncJson } from './lock.js';
 /* بيانات المواقع: العدادات (من 511)، المحطات، مناطق المقاولين، ومواقع المحولات */
 import { arDigits } from './util.js';
 
@@ -13,9 +12,10 @@ export async function loadGeo(base = './data/') {
     for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i);
     return initGeo(JSON.parse(em.textContent), u.buffer);
   }
-  /* البيانات مشفّرة (core/lock.js) */
-  const [meta, u] = await Promise.all([getEncJson(base + 'meta.enc'), getEnc(base + 'meters.enc')]);
-  initGeo(meta, u.buffer.slice(u.byteOffset, u.byteOffset + u.byteLength));
+  const [meta, buf] = await Promise.all([
+    fetch(base + 'meta.json').then(r => r.json()),
+    fetch(base + 'meters.bin').then(r => r.arrayBuffer())]);
+  initGeo(meta, buf);
 }
 /* meters.bin: لكل عداد 8 بايت = فرق الرقم عن السابق (uint32) + lat (uint16) + lng (uint16) */
 export function initGeo(meta, buf) {
