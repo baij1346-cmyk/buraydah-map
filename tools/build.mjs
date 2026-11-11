@@ -3,7 +3,7 @@
    تشغيل: node tools/build.mjs <مسار esbuild> */
 import { execFileSync } from 'child_process';
 import fs from 'fs';
-const root = new URL('..', import.meta.url).pathname, app = root + 'app/';
+const root = new URL('..', import.meta.url).pathname, app = root + 'ops-iry7341wak4e/';
 const V = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
 execFileSync(process.argv[2], [app + 'js/main.js', '--bundle', '--format=esm', '--minify', '--charset=utf8', '--target=es2020', '--define:__VERSION__="' + V + '"', '--outfile=' + app + 'app.js'], { stdio: 'inherit' });
 fs.writeFileSync(app + 'version.json', JSON.stringify({ v: V }));
