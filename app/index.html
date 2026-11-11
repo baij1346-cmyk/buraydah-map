@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="css/app.css?v=202611101812">
+<link rel="stylesheet" href="css/app.css?v=202611110509">
 </head>
 <body>
 <div class="app">
@@ -33,6 +33,7 @@
   <main class="views" id="views">
     <section class="view" id="v-ops" data-title="غرفة العمليات"></section>
     <section class="view" id="v-manage" data-title="الإدارة" hidden></section>
+    <section class="view" id="v-sla" data-title="حد 3 ساعات" hidden></section>
     <section class="view" id="v-review" data-title="المراجعة" hidden></section>
     <section class="view" id="v-control" data-title="الضبط" hidden></section>
     <section class="view" id="v-hasr" data-title="الحصر" hidden></section>
@@ -45,6 +46,7 @@
   <nav class="nav" id="nav" aria-label="الأقسام">
     <a href="#ops" data-v="ops"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>العمليات<span class="badge-n" id="bOps" hidden></span></a>
     <a href="#manage" data-v="manage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>الإدارة</a>
+    <a href="#sla" data-v="sla" class="wide-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>حد 3 ساعات<span class="badge-n" id="bSla" hidden></span></a>
     <a href="#review" data-v="review" class="wide-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>المراجعة<span class="badge-n" id="bReview" hidden></span></a>
     <a href="#control" data-v="control" class="wide-only"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16h.01"/></svg>الضبط</a>
     <a href="#hasr" data-v="hasr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" opacity=".5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>الحصر</a>
@@ -61,6 +63,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
-<script type="module" src="app.js?v=202611101812"></script>
+<script type="module" src="app.js?v=202611110509"></script>
 </body>
 </html>

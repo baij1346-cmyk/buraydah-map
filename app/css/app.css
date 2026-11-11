@@ -436,3 +436,17 @@ details.card summary{cursor:pointer;font-weight:700}
 @media print{.updbar{display:none!important}}
 .scope{position:absolute;z-index:1000;top:12px;left:50%;transform:translateX(-50%);box-shadow:var(--sh-lg);background:#fff}
 @media (max-width:999px){.scope{top:10px}}
+
+/* بطاقة مطوية + تجميع نقاط الخريطة */
+.sc .sc-more{display:none}
+.sc.open .sc-more{display:flex;flex-direction:column;gap:7px;padding-top:4px;border-top:1px solid var(--line-2);margin-top:2px}
+.sc.open .sc-sum{display:none}
+.rc-top{cursor:pointer}
+.sc-sum{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:.8rem;color:var(--muted);cursor:pointer}
+.sc-sum span:first-child{color:var(--fg);font-weight:600}
+.chev{width:8px;height:8px;border-inline-end:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(45deg);margin-inline-start:6px;flex:none;transition:transform .15s}
+.sc.open .chev{transform:rotate(-135deg)}
+.sc{padding:10px 14px;gap:5px}
+.clu{display:grid;place-items:center;border-radius:50%;color:#fff;font-size:12px;font-weight:700;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35),0 0 0 4px rgba(0,0,0,.06);background:var(--b0);cursor:pointer}
+.clu.b1{background:var(--b1)}.clu.b2{background:var(--b2)}.clu.b3{background:var(--b3)}
+.pop>div{margin:2px 0}

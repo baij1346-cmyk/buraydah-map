@@ -16,8 +16,15 @@ function mount(el) { root = el; el.innerHTML = '<div class="pad" id="brBody"></d
 /* الأيام اللي فيها تقارير مرفوعة، الأحدث أول */
 const days = () => [...new Set(S.snapshots.map(s => isoDay(s.at)))].sort().reverse();
 
+/* 'all' = الحدث كامل: من بداية الحدث المعلن، وإلا كل التقارير المتتالية (بدون فجوة أكثر من يومين) */
+function eventSnaps() {
+  const A = S.snapshots; if (!A.length) return [];
+  if (S.event.start) { const x = A.filter(s => s.at >= S.event.start - 6 * HOUR); if (x.length) return x; }
+  let i = A.length - 1; while (i > 0 && A[i].at - A[i - 1].at <= 2 * DAY) i--;
+  return A.slice(i);
+}
 export function analyzeDay(d) {
-  const snaps = S.snapshots.filter(s => isoDay(s.at) === d);
+  const snaps = d === 'all' ? eventSnaps() : S.snapshots.filter(s => isoDay(s.at) === d);
   if (!snaps.length) return null;
   const t0 = snaps[0].at, t1 = snaps[snaps.length - 1].at;
   /* بلاغات اليوم: كل بلاغ ظهر في تقارير هذا اليوم */
@@ -47,16 +54,18 @@ function render() {
   if (!root) return;
   const box = root.querySelector('#brBody'), D = days();
   if (!D.length) { box.innerHTML = '<div class="hero"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4h6v3H9zM6 6H5v15h14V6h-1"/><path d="M9 12h6M9 16h4"/></svg></div><h3>ما فيه تقارير للحين</h3><p>ارفع تقرير توجيه البلاغات (PDF)، ويطلع هنا ملخص اليوم: المراكز، المقاولين، الذروة، والنقاط الساخنة.</p><label class="tbtn primary" for="pdfIn">رفع التقرير</label></div>'; return; }
-  if (!D.includes(day)) day = D[0];
+  if (day !== 'all' && !D.includes(day)) day = D[0];
   const A = analyzeDay(day), F = A.F, FC = F.filter(f => f.center === center);
-  const dlabel = new Date(A.t0).toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dl = t => new Date(t).toLocaleDateString('ar-SA-u-nu-latn-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dlabel = isoDay(A.t0) === isoDay(A.t1) ? dl(A.t0) : dl(A.t0) + ' ← ' + dl(A.t1);
   const T = Object.assign({ ...DEF_TARGETS }, S.settings.targets || {}), a = A.all;
   let sn = 0; const N = () => ++sn;
+  const EV = day === 'all', multi = isoDay(A.t0) !== isoDay(A.t1);
   const noCause = F.filter(f => !f.open && !f.cause).length, located = pct(F.filter(f => f.lat != null).length, F.length);
-  let h = '<div class="row no-print">' + (D.length > 1 ? '<div class="seg">' + D.slice(0, 7).map(x => '<button data-d="' + x + '" aria-pressed="' + (x === day) + '">' + x.slice(5) + '</button>').join('') + '</div>' : '') +
+  let h = '<div class="row no-print">' + '<div class="seg">' + D.slice(0, 7).map(x => '<button data-d="' + x + '" aria-pressed="' + (x === day) + '">' + x.slice(5) + '</button>').join('') + '<button data-d="all" aria-pressed="' + (day === 'all') + '">تقرير الحدث كامل</button></div>' +
     '<span class="spacer"></span><button class="tbtn primary" id="brPrint"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></svg>التقرير التنفيذي (PDF)</button><a class="tbtn" id="brWa" target="_blank" rel="noopener">واتساب</a><button class="tbtn" id="brCopy">نسخ</button></div>';
   /* الغلاف */
-  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>مركز أبو بندر للعمليات · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>تقرير أداء معالجة الأعطال</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
+  h += '<div class="rep-cover"><div class="rep-brand"><span class="logo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg></span><div><small>مركز أبو بندر للعمليات · الجهد المتوسط والمنخفض · ' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small><h2>' + (EV ? 'تقرير نهاية الحدث' + (F.some(f => f.rain) ? ' — حالة الأمطار' : '') : 'تقرير أداء معالجة الأعطال') + '</h2><p>' + dlabel + ' · ' + fmtTime(A.t0) + ' – ' + fmtTime(A.t1) + ' · ' + A.snaps.length + ' تقرير توجيه بلاغات</p></div></div></div>';
   /* الخلاصة التنفيذية */
   h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>الخلاصة التنفيذية</h3><ol class="msgs">' + keyMessages(A, center, T).map(m => '<li>' + m + '</li>').join('') + '</ol></section>';
   /* مؤشرات الأداء مقابل الأهداف */
@@ -100,6 +109,27 @@ function render() {
       '<p class="hint">مغذي عليه بلاغات كثيرة على أكثر من زون = غالبًا مشكلة جهد متوسط (فصل/تذبذب) مو أعطال فردية.</p></section>';
     A.feeders = G;
   }
+  if (EV) {
+    /* يوم بيوم */
+    if (multi) {
+      const byDay = [...groupBy(F, f => isoDay(f.start))].sort((x, y) => x[0] < y[0] ? -1 : 1);
+      h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>الحدث يوم بيوم</h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>اليوم</th><th class="n">البلاغات</th><th class="n">انحل</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">تجاوز ساعتين</th><th class="n">تجاوز 3 ساعات</th></tr></thead><tbody>' +
+        byDay.map(([d, L]) => { const r = row(d, L); return '<tr><td><b class="ltr">' + d + '</b>' + (S.settings.rainDays[d] ? ' <span class="pill blue">مطر</span>' : '') + '</td><td class="n">' + r.n + '</td><td class="n">' + r.closed + '</td><td class="n">' + (r.closed ? fmtDur(r.avg) : '—') + '</td><td class="n">' + (r.closed ? r.within[0] + '%' : '—') + '</td><td class="n">' + (L.filter(f => f.dur > 120).length || '—') + '</td><td class="n">' + (L.filter(f => f.dur > 180).length || '—') + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
+    }
+    /* مقارنة مع الأيام العادية */
+    const evDays = new Set(F.map(f => isoDay(f.start))), base = faults({ from: A.t0 - 60 * DAY, to: A.t0 }).filter(f => f.src === 'sec' && !f.open && !evDays.has(isoDay(f.start)));
+    if (base.length >= 20) {
+      const rb = row('', base), nd = new Set(base.map(f => isoDay(f.start))).size, ed = Math.max(1, evDays.size);
+      h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>مقارنة مع الأيام العادية <small>' + nd + ' يوم قبل الحدث</small></h3><div class="kgrid big"><div><b>' + Math.round(10 * (F.length / ed) / (base.length / nd)) / 10 + '×</b><span>حجم البلاغات اليومي</span></div><div><b>' + fmtDur(a.avg) + '</b><span>متوسط الإغلاق (العادي ' + fmtDur(rb.avg) + ')</span></div><div><b>' + a.within[0] + '%</b><span>خلال ساعة (العادي ' + rb.within[0] + '%)</span></div></div></section>';
+    }
+    /* المحولات الأكثر تكرارًا */
+    const TR = [...groupBy(FC.filter(f => f.tr), f => f.tr)].filter(([, L]) => L.length >= 3).sort((x, y) => y[1].length - x[1].length);
+    if (TR.length) h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>المحولات الأكثر تكرارًا — ' + center + ' <small>' + TR.length + ' محول عليه 3 بلاغات أو أكثر</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المحول</th><th class="n">البلاغات</th><th class="n">مجمّعة</th><th class="n">مفتوح</th><th>المقاول</th><th>الفترة</th></tr></thead><tbody>' +
+      TR.slice(0, 15).map(([k, L]) => '<tr><td class="ltr">' + esc(trLabel(k)) + '</td><td class="n"><b>' + L.length + '</b></td><td class="n">' + (L.filter(f => f.kind !== 'بلاغ مشترك').length || '—') + '</td><td class="n">' + (L.filter(f => f.open).length || '—') + '</td><td>' + esc([...new Set(L.map(f => f.co || 'بدون فني'))].join('، ')) + '</td><td>' + fmtTime(Math.min(...L.map(f => f.start))) + ' – ' + fmtTime(Math.max(...L.map(f => f.start))) + '</td></tr>').join('') + '</tbody></table></div><p class="hint">هذي المحولات مرشحة للفحص والعزل ضد الماء قبل الحالة المطرية الجاية (تفاصيلها في «الحصر»).</p></section>';
+    /* الدروس المستفادة */
+    const LS = lessons(A, FC, TR);
+    if (LS.length) h += '<section class="rep-sec"><h3 class="rep-h"><span>' + N() + '</span>الدروس المستفادة</h3><div class="card"><ul class="insights">' + LS.map(x => '<li>' + x + '</li>').join('') + '</ul></div></section>';
+  }
   /* التوصيات */
   const B0 = Math.max(1, S.settings.baseline || 15), wx = S.settings.wx, op = a.open;
   const sugLv = wx === 'red' ? 4 : (wx === 'orange' || op >= 3 * B0) ? 3 : (wx === 'yellow' || op >= 2 * B0) ? 2 : 1;
@@ -136,6 +166,23 @@ export function hotspotsHtml(FC, label) {
     trs.slice(0, 8).map(([k, L]) => '<li>محول <span class="ltr">' + esc(trLabel(k)) + '</span>' + (label ? '' : ' (' + L[0].center + ')') + ': <b>' + L.length + ' بلاغات</b> (' + [...new Set(L.map(f => f.co || 'بدون فني'))].join('، ') + ')' + (L.some(f => f.open) ? ' · فيه مفتوح' : '') + '</li>').join('') + '</ul></div>';
 }
 export const latestDay = () => days()[0] || '';
+
+/* دروس الحدث: تُستخرج من الأرقام */
+function lessons(A, FC, TR) {
+  const out = [], late = FC.filter(f => f.dur > 120), nt = late.filter(f => !f.tech).length;
+  if (late.length >= 5 && pct(nt, late.length) >= 30) out.push('<b>الإسناد هو عنق الزجاجة:</b> ' + pct(nt, late.length) + '% من البلاغات اللي تجاوزت ساعتين (' + nt + ' من ' + late.length + ') ما كان مسند لها فني. المطلوب: آلية إسناد سريعة وقت الذروة ومتابعة المشرف كل 30 دقيقة.');
+  const sr = A.series || [], pk = sr.length ? sr.reduce((m, x) => x.n > m.n ? x : m, sr[0]) : null;
+  if (pk && sr.length >= 3) out.push('<b>ذروة المفتوح:</b> ' + pk.n + ' بلاغ الساعة ' + fmtTime(pk.at) + (sr[0].n ? '، يعني ' + Math.round(10 * pk.n / Math.max(1, sr[0].n)) / 10 + '× بداية الحدث' : '') + '. جاهزية الفرق الإضافية لازم تسبق هالوقت.');
+  if (A.peak) out.push('<b>وقت الضغط:</b> بين ' + A.peak.from + ':00 و' + A.peak.to + ':00 بمعدل ' + A.peak.perHour + ' بلاغ بالساعة. ورديات المقاولين تُعزّز في هالنافذة.');
+  if (TR.length) out.push('<b>' + TR.length + ' محول تكرر عليه 3 بلاغات أو أكثر</b> (أعلاها ' + trLabel(TR[0][0]) + ' بـ' + TR[0][1].length + '): تدخل برنامج العزل والإحكام قبل الموسم.');
+  const B = contractorBoard(FC).filter(r => r.real && r.closed >= 5);
+  if (B.length > 1) out.push('<b>تفاوت المقاولين:</b> الأفضل ' + esc(B[0].k) + ' (' + B[0].score + '/100) والأضعف ' + esc(B[B.length - 1].k) + ' (' + B[B.length - 1].score + '/100). يُراجع توزيع الفرق والمناطق حسب الأداء.');
+  const over = FC.filter(f => f.dur > 180), und = over.filter(f => !f.ref.delay).length;
+  if (over.length) out.push('<b>' + over.length + ' بلاغ تجاوز 3 ساعات</b>' + (und ? '، منها ' + und + ' بدون سبب موثّق — يُستكمل التوثيق من شاشة «حد 3 ساعات» قبل انتهاء مهلة الـ5 أيام.' : '، وكلها موثّقة السبب ✓'));
+  const gap = Math.max(0, ...A.snaps.slice(1).map((x, i) => x.at - A.snaps[i].at)) / 60000;
+  if (gap > 60) out.push('<b>دقة البيانات:</b> أطول فجوة بين تقريرين ' + fmtDur(gap) + '. رفع التقرير كل 30 دقيقة وقت الحدث يعطي أوقات إغلاق أدق.');
+  return out;
+}
 
 /* أبرز النقاط بكلام واضح */
 function insights(A, focus) {

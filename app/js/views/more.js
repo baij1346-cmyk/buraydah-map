@@ -3,6 +3,7 @@ import { S } from '../store/repo.js';
 import { ROOT } from '../core/ui.js';
 import { faults } from '../analysis/model.js';
 const I = {
+  sla: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/>',
   review: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
   control: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v5M12 16h.01"/>',
   plan: '<path d="M9 4h6v3H9zM6 6H5v15h14V6h-1"/><path d="M9 12h6M9 16h4"/>',
@@ -13,7 +14,7 @@ let root;
 function mount(el) { root = el; el.innerHTML = '<div class="pad"><div class="more-list" id="moBody"></div></div>'; }
 function render() {
   const nc = faults().filter(f => !f.open && !f.cause).length;
-  const L = [['review', 'المراجعة', nc ? nc + ' بلاغ مقفل بدون سبب' : 'البلاغات المقفلة، المتكرر، النقاط الساخنة'], ['control', 'الضبط', 'مخالفات المقاولين وتصدير المحضر'],
+  const L = [['sla', 'حد 3 ساعات', 'البلاغات المتجاوزة والقريبة، توثيق السبب، ملف الهيئة'], ['review', 'المراجعة', nc ? nc + ' بلاغ مقفل بدون سبب' : 'البلاغات المقفلة، المتكرر، النقاط الساخنة'], ['control', 'الضبط', 'مخالفات المقاولين وتصدير المحضر'],
     ['plan', 'الخطة', 'المستويات، الأدوار، التجهيز، ملف الحدث'], ['settings', 'الإعدادات', 'المقاولين، المحولات، النسخ الاحتياطي']];
   root.querySelector('#moBody').innerHTML = L.map(([k, t, d]) => '<a href="#' + k + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + I[k] + '</svg><span>' + t + '<small>' + d + '</small></span></a>').join('') +
     '<a href="' + ROOT + 'map.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + I.map + '</svg><span>خريطة المقاولين<small>البحث برقم العداد أو المحطة</small></span></a>';

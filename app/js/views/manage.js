@@ -3,8 +3,7 @@ import { S, patchTickets } from '../store/repo.js';
 import { openFaults } from '../analysis/model.js';
 import { faultCard, bindCards, waLink } from '../core/ui.js';
 import { goto, pickTr, violationSheet } from './ops.js';
-import { COLORS, DIR, NEI, LV } from '../core/const.js';
-import { G } from '../core/geo.js';
+import { LV } from '../core/const.js';
 import { esc, fmtDur, fmtTime, mins, now, copy, armed, toast } from '../core/util.js';
 import { markUpdateSent } from '../core/levels.js';
 
@@ -20,25 +19,18 @@ function mount(el) { root = el; el.innerHTML = '<div class="pad" id="mgBody"></d
 function render() {
   if (!root) return;
   const op = openFaults(), box = root.querySelector('#mgBody');
-  /* ضغط المقاولين (من اسم الفني) — وضغط المناطق إذا أغلب البلاغات معروف موقعها */
+  /* ضغط المقاولين (من اسم الفني). التقسيم المؤقت للمناطق (أ–ط) انشال من هنا لأنه مو التقسيم الرسمي */
   const cos = {}; op.forEach(f => { const k = f.co || (f.src === 'sec' ? 'بدون فني' : 'غير محدد'); (cos[k] = cos[k] || { n: 0, late: 0, over: 0, max: 0 }); cos[k].n++; if (f.dur >= 90) cos[k].late++; if (f.dur >= 120) cos[k].over++; cos[k].max = Math.max(cos[k].max, f.dur); });
   let h = '<p class="sec-title">ضغط المقاولين <small>البلاغات المفتوحة الآن</small></p>';
   h += op.length ? '<div class="cos">' + Object.entries(cos).sort((a, b) => b[1].late - a[1].late || b[1].n - a[1].n).map(([k, v]) =>
     '<div class="co' + (v.over ? ' hot' : '') + '"><span>' + esc(k) + '</span><b>' + v.n + '</b><small>' + (v.late ? v.late + ' متأخر' + (v.over ? ' · ' + v.over + ' فوق ساعتين' : '') : 'أقدم ' + fmtDur(v.max)) + '</small></div>').join('') + '</div>'
     : '<div class="empty">ما فيه بلاغات مفتوحة.</div>';
-  const load = G.ZS.map((q, i) => ({ i, n: op.filter(f => f.zone === i).length, late: op.filter(f => f.zone === i && f.dur >= 90).length }));
-  const located = op.filter(f => f.zone >= 0).length, avg = located / 9;
-  if (located && located >= op.length / 2) {
-    load.forEach(o => o.lvl = o.n === 0 ? '' : (o.n >= Math.max(4, avg * 1.8) || o.late >= 2) ? 'high' : o.n >= Math.max(2, avg * 1.2) ? 'mid' : '');
-    h += '<p class="sec-title">ضغط المناطق <small>' + located + ' من ' + op.length + ' معروف موقعه</small></p><div class="cgrid">' +
-      load.map(o => '<div class="cc ' + o.lvl + '"><span class="ct" style="background:' + COLORS[o.i] + '">' + G.ZS[o.i].L + '</span><span>' + esc((S.settings.zones[o.i] || {}).co || DIR[o.i]) + (o.late ? '<br><span class="p1n">' + o.late + ' متأخر</span>' : '') + '</span><b>' + o.n + '</b></div>').join('') + '</div>';
-    const tips = [];
-    load.filter(o => o.lvl === 'high').forEach(o => {
-      const nb = NEI[o.i].map(j => load[j]).sort((a, b) => a.n - b.n)[0];
-      if (nb && nb.n < o.n) tips.push('منطقة <b>' + G.ZS[o.i].L + '</b> عليها ضغط (' + o.n + ' مفتوح). اقتراح: اسحب لها فرقة من منطقة <b>' + G.ZS[nb.i].L + '</b> (' + nb.n + ' مفتوح).');
-    });
-    h += tips.map(t => '<div class="tip">' + t + '</div>').join('');
-  }
+  /* لوحة المشرفين: مين عنده بلاغات بدون فني ومتأخرة، ورسالة جاهزة له */
+  const sups = {}; op.filter(f => f.src === 'sec').forEach(f => { const k = f.sup || ''; (sups[k] = sups[k] || []).push(f); });
+  const SL = Object.entries(sups).filter(([k]) => k).map(([k, L]) => ({ k, L, nt: L.filter(f => !f.tech).length, late: L.filter(f => f.dur >= 90).length, over: L.filter(f => f.dur >= 120).length, max: Math.max(...L.map(f => f.dur)) })).sort((a, b) => b.over - a.over || b.nt - a.nt || b.L.length - a.L.length);
+  if (SL.length) h += '<p class="sec-title">المشرفين <small>المفتوح الآن</small></p><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المشرف</th><th class="n">مفتوح</th><th class="n">بدون فني</th><th class="n">تجاوز 90 د</th><th class="n">تجاوز ساعتين</th><th class="n">الأقدم</th><th></th></tr></thead><tbody>' +
+    SL.map((x, i) => '<tr><td><b>' + esc(x.k) + '</b></td><td class="n">' + x.L.length + '</td><td class="n" style="' + (x.nt ? 'color:var(--warn);font-weight:700' : '') + '">' + (x.nt || '—') + '</td><td class="n">' + (x.late || '—') + '</td><td class="n" style="' + (x.over ? 'color:var(--bad);font-weight:700' : '') + '">' + (x.over || '—') + '</td><td class="n">' + fmtDur(x.max) + '</td><td><a class="icon-btn" target="_blank" rel="noopener" href="' + waLink(supMsg(x)) + '">واتساب</a></td></tr>').join('') + '</tbody></table></div>';
+  else if (op.some(f => f.src === 'sec')) h += '<p class="hint">لوحة المشرفين تحتاج أسماء المشرفين: ارفع ملف التقرير الأصلي (PDF) من هذا الجهاز، لأن النسخة المنشورة بدون أسماء.</p>';
   h += '<div class="tools"><a class="tbtn primary" id="mgWa" target="_blank" rel="noopener" href="' + waLink(summary(op)) + '">أرسل تحديث الحالة واتساب</a><button class="tbtn" id="mgCopy">نسخ التحديث</button></div>';
   /* القائمة */
   const fn = (FL.find(x => x[0] === filt) || FL[0])[2], fs = op.filter(fn).sort((a, b) => b.dur - a.dur);
@@ -57,6 +49,12 @@ function render() {
     toast('تم إقفال ' + secOpen.length + ' بلاغ');
   });
   bindCards(box, fs, { onGoto: goto, onPick: pickTr, onViol: violationSheet, rerender: render });
+}
+function supMsg(x) {
+  const hot = x.L.filter(f => f.dur >= 90 || !f.tech).sort((a, b) => b.dur - a.dur);
+  let s = 'السلام عليكم ' + x.k + '\nعندك ' + x.L.length + ' بلاغ مفتوح' + (x.nt ? '، منها ' + x.nt + ' بدون فني' : '') + (x.over ? '، و' + x.over + ' تجاوز ساعتين' : '') + '.\n';
+  if (hot.length) { s += '\nالمطلوب متابعتها الحين:\n'; hot.slice(0, 15).forEach(f => s += '• ' + f.id + ' — ' + fmtDur(f.dur) + ' — ' + (f.tech ? (f.co || 'فني') : 'بدون فني') + (f.ref.tr ? ' — ' + f.ref.tr : '') + '\n'); }
+  return s + '\nنرجو الإسناد والإفادة.';
 }
 function summary(op) {
   const e = S.event, l = e.level || 1;

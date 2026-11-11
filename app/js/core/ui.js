@@ -115,14 +115,18 @@ export function waText(f) {
 export function phoneFor(f) { return f.zone >= 0 && S.settings.zones[f.zone] ? (S.settings.zones[f.zone].wa || '') : ''; }
 
 /* ---------- بطاقة البلاغ (لكل الأقسام) ---------- */
+const OPEN = new Set();
 export function faultCard(f, { manage = false, showCause = false } = {}) {
   const b = bucket(f.dur), late = f.open && f.dur >= 90;
   const head = f.src === 'sec'
     ? '<span class="bk ' + (f.open ? BK[b].c : 'done') + '">' + (f.open ? BK[b].t : 'مقفل') + '</span><span class="rc-type">' + esc(f.center) + '</span>' + (f.kind && f.kind !== 'بلاغ مشترك' ? '<span class="tagx">' + esc(f.kind) + '</span>' : '')
     : '<span class="pr p' + f.ref.p + '">' + PRN[f.ref.p] + '</span><span class="rc-type">' + typeName(f.kind) + '</span><span class="tagx">يدوي</span>';
   const time = f.open ? (late ? 'متأخر · ' : '') + 'منذ ' + fmtDur(f.dur) : 'أُغلق بعد ' + (f.uncertain ? '~' : '') + fmtDur(f.dur);
-  let h = '<article class="sc ' + (f.open ? BK[b].c : '') + '" data-id="' + esc(f.src + ':' + f.id) + '">' +
-    '<div class="rc-top">' + head + zoneChip(f.zone, 22) + '<span class="rc-time' + (late ? ' late' : '') + '">' + time + '</span></div>';
+  /* البطاقة مطوية: سطرين (الحالة والمدة، ثم المقاول والمحول). تنفتح بالضغط */
+  const key = f.src + ':' + f.id;
+  let h = '<article class="sc ' + (f.open ? BK[b].c : '') + (OPEN.has(key) ? ' open' : '') + '" data-id="' + esc(key) + '">' +
+    '<div class="rc-top" role="button" tabindex="0" aria-expanded="' + OPEN.has(key) + '">' + head + zoneChip(f.zone, 22) + '<span class="rc-time' + (late ? ' late' : '') + '">' + time + '</span><i class="chev"></i></div>' +
+    '<div class="sc-sum"><span>' + esc(f.co || (f.src === 'sec' ? 'بدون فني' : '')) + '</span>' + (f.ref.tr ? '<span class="ltr">' + esc(f.ref.tr) + '</span>' : '') + '<span class="ltr">' + esc(f.src === 'sec' ? f.id : '#' + f.id) + '</span>' + (!f.open && !f.cause ? '<span style="color:var(--warn)">بدون سبب</span>' : '') + '</div><div class="sc-more">';
   if (f.open && f.dur >= 60) h += '<div class="pill ' + (f.dur >= 120 ? 'red' : 'amber') + '">التصعيد: ' + escalation(f.dur).t + '</div>';
   if (f.tech || f.src === 'sec') h += '<div class="kv"><span>الفني</span><b>' + (f.tech ? esc(f.tech) + (f.co && f.co !== 'غير محدد' ? ' <span class="tagx">' + esc(f.co) + '</span>' : '') : '<span style="color:var(--p1)">لم يُسند لفني</span>') + '</b></div>';
   if (f.sup) h += '<div class="kv"><span>المشرف</span><b>' + esc(f.sup) + '</b></div>';
@@ -161,7 +165,7 @@ export function faultCard(f, { manage = false, showCause = false } = {}) {
     h += '<select class="icon-btn" data-delay aria-label="سبب التأخير"><option value="">سبب التأخير؟</option>' + DELAY.map(x => '<option' + (cur === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>';
   }
   if (manage) h += '<button class="icon-btn" data-viol>تسجيل مخالفة</button>';
-  h += '</div></article>';
+  h += '</div></div></article>';
   return h;
 }
 
@@ -188,6 +192,9 @@ export function bindCards(root, list, { onGoto, onPick, onViol, rerender } = {})
   const byKey = new Map(list.map(f => [f.src + ':' + f.id, f]));
   root.querySelectorAll('article[data-id]').forEach(el => {
     const f = byKey.get(el.dataset.id); if (!f) return;
+    const top = el.querySelector('.rc-top'), tog = () => { const k = el.dataset.id; OPEN.has(k) ? OPEN.delete(k) : OPEN.add(k); el.classList.toggle('open'); top.setAttribute('aria-expanded', OPEN.has(k)); };
+    top.onclick = tog; top.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } };
+    el.querySelector('.sc-sum').onclick = tog;
     bindCauses(el, f, rerender);
     el.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => copy(b.dataset.copy));
     el.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => { const [a, c] = b.dataset.goto.split(',').map(Number); onGoto && onGoto(a, c); });

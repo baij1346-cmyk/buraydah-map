@@ -18,8 +18,9 @@ import stats from './views/stats.js';
 import plan from './views/plan.js';
 import settings from './views/settings.js';
 import more from './views/more.js';
+import sla, { slaSets } from './views/sla.js';
 
-const VIEWS = { ops, manage, review, control, hasr, stats, plan, settings, more };
+const VIEWS = { ops, manage, sla, review, control, hasr, stats, plan, settings, more };
 const mounted = new Set();
 let cur = 'ops';
 
@@ -32,7 +33,7 @@ function show(v) {
   if (location.hash.slice(1) !== v) history.pushState(null, '', '#' + v);
   cur = v;
   document.querySelectorAll('.view').forEach(el => el.hidden = el.id !== 'v-' + v);
-  document.querySelectorAll('#nav a').forEach(a => a.setAttribute('aria-current', a.dataset.v === v || (v !== 'ops' && ['review', 'control', 'plan', 'settings'].includes(v) && a.dataset.v === 'more' && matchMedia('(max-width:999px)').matches) ? 'page' : 'false'));
+  document.querySelectorAll('#nav a').forEach(a => a.setAttribute('aria-current', a.dataset.v === v || (v !== 'ops' && ['sla', 'review', 'control', 'plan', 'settings'].includes(v) && a.dataset.v === 'more' && matchMedia('(max-width:999px)').matches) ? 'page' : 'false'));
   const el = document.getElementById('v-' + v);
   if (!mounted.has(v)) { VIEWS[v].mount(el, app); mounted.add(v); }
   VIEWS[v].render();
@@ -43,6 +44,7 @@ window.addEventListener('hashchange', () => show(location.hash.slice(1)));
 
 /* ---------- الشريط العلوي ---------- */
 const lvlBtn = document.getElementById('lvlBtn');
+let b3 = 0;
 function renderBar() {
   const l = repo.S.event.level || 1, m = metrics(), sg = suggest(m), e = repo.S.event;
   lvlBtn.style.background = LV[l].bg; lvlBtn.style.color = LV[l].c; lvlBtn.textContent = 'المستوى ' + l + ' — ' + LV[l].n;
@@ -68,10 +70,12 @@ function renderBar() {
   const noCause = faults().filter(f => !f.open && !f.cause).length;
   document.getElementById('kpis').innerHTML =
     kpi(op.length, 'مفتوح', '', 'ops') + kpi(b90, '90–119 د', b90 ? 'warn' : '', 'ops') + kpi(b120, 'تجاوز ساعتين', b120 ? 'alert' : '', 'ops') +
+    ((b3 = op.filter(f => f.dur > 180).length) ? kpi(b3, 'تجاوز 3 ساعات', 'alert', 'sla') : '') +
     (m.mv ? kpi(m.mv, 'فصل مغذي', 'alert', 'manage') : '') + kpi(today.length, 'انقفل اليوم', '', 'stats') +
     kpi(avgToday == null ? '—' : fmtDur(avgToday), 'متوسط الإغلاق اليوم', avgToday > 90 ? 'warn' : '', 'stats') + kpi(noCause, 'مقفل بدون سبب', noCause ? 'warn' : '', 'review');
   document.querySelectorAll('.kpi[data-go]').forEach(b => b.onclick = () => app.go(b.dataset.go));
-  badge('bOps', b90 + b120); badge('bReview', noCause); badge('bMore', noCause);
+  const X = slaSets(now() - 86400000), slaN = X.over.filter(f => f.open).length + X.near.length;
+  badge('bOps', b90 + b120); badge('bReview', noCause); badge('bSla', slaN); badge('bMore', slaN || noCause);
 }
 const kpi = (n, t, cls, go) => '<button class="kpi ' + cls + '" data-go="' + go + '"><b>' + n + '</b><span>' + t + '</span></button>';
 function badge(id, n) { const e = document.getElementById(id); if (e) { e.hidden = !n; e.textContent = n; } }

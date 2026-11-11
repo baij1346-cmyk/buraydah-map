@@ -22,6 +22,7 @@ function mount(el) {
   map = makeMap(el.querySelector('#opsMap'));
   layer = L.layerGroup().addTo(map);
   map._fit = () => fitAll(true);
+  map.on('zoomend', () => drawMap(false));
   el.querySelectorAll('#opsScope button').forEach(b => b.onclick = () => { scope = b.dataset.sc; try { localStorage.setItem('ops-scope', scope); } catch (e) { } fitted = false; filt = 'all'; render(); });
   banner = el.querySelector('#opsPick');
   banner.querySelector('button').onclick = () => { pickCb = null; banner.hidden = true; };
@@ -46,6 +47,40 @@ export function pickTr(key) {
   });
 }
 
+/* رسم الخريطة: نقاط متقاربة تتجمع في دائرة فيها العدد (بلون أسوأ بلاغ)، وتتفكك مع التكبير */
+let lastAll = [];
+function drawMap(fit) {
+  const all = lastAll; layer.clearLayers();
+  const pts = [], z = map.getZoom(), loc = all.filter(f => f.lat != null), groups = new Map();
+  const add = (k, f) => { if (!groups.has(k)) groups.set(k, []); groups.get(k).push(f); };
+  if (z < 15) loc.forEach(f => { const p = map.project([f.lat, f.lng], z); add(Math.floor(p.x / 44) + ':' + Math.floor(p.y / 44), f); });
+  else loc.forEach(f => add(f.lat.toFixed(5) + ',' + f.lng.toFixed(5), f));
+  groups.forEach(L_ => {
+    L_.forEach(f => pts.push([f.lat, f.lng]));
+    if (L_.length === 1) {
+      const f = L_[0], b = bucket(f.dur);
+      const html = '<div class="pin ' + (f.src === 'manual' ? 'man' : BK[b].c) + (f.approx ? ' approx' : '') + '"></div>';
+      L.marker([f.lat, f.lng], { icon: L.divIcon({ className: '', html, iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: f.dur, riseOnHover: true }).bindPopup(popup(f), { maxWidth: 280 }).addTo(layer);
+      return;
+    }
+    const worst = Math.max(...L_.map(f => bucket(f.dur))), lat = L_.reduce((a, f) => a + f.lat, 0) / L_.length, lng = L_.reduce((a, f) => a + f.lng, 0) / L_.length;
+    const sz = L_.length >= 20 ? 40 : L_.length >= 6 ? 34 : 28;
+    const m = L.marker([lat, lng], { icon: L.divIcon({ className: '', html: '<div class="clu ' + BK[worst].c + '" style="width:' + sz + 'px;height:' + sz + 'px">' + L_.length + '</div>', iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), zIndexOffset: 1000 + L_.length }).addTo(layer);
+    if (z < 15) m.on('click', () => map.fitBounds(L.latLngBounds(L_.map(f => [f.lat, f.lng])).pad(.3), { maxZoom: 16 }));
+    else m.bindPopup('<div class="pop"><h4>' + L_.length + ' بلاغ في نفس الموقع</h4>' + L_.sort((x, y) => y.dur - x.dur).map(f => '<div><span class="bk ' + BK[bucket(f.dur)].c + '">' + fmtDur(f.dur) + '</span> <span class="ltr">' + esc(f.id) + '</span> · ' + esc(f.co || 'بدون فني') + '</div>').join('') + '<div class="acts"><a target="_blank" rel="noopener" href="' + gmapsDir(lat, lng) + '">الاتجاهات</a></div></div>', { maxWidth: 300 });
+  });
+  CENTERS.forEach(c => {
+    const un = all.filter(f => f.center === c && f.lat == null); if (!un.length) return;
+    const worst = Math.max(...un.map(f => bucket(f.dur))), ll = CENTER_LL[c];
+    const m = L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="bub" title="' + un.length + ' بلاغ في ' + c + ' بدون موقع محول"><b class="' + BK[worst].c + '">' + un.length + '</b><span>' + c + '</span></div>', iconSize: [0, 0] }), zIndexOffset: 2000 }).addTo(layer);
+    m.on('click', () => { filt = 'c:' + c; setMode('list'); render(); });
+    pts.push(ll);
+  });
+  if (!fit) return;
+  if (all.some(f => f.center === 'بريدة')) pts.push([G.LA[0], G.LO[0]], [G.LA[1], G.LO[1]]);
+  bounds = pts.length ? L.latLngBounds(pts) : null;
+  if (!fitted && bounds) { fitted = true; setTimeout(() => fitAll(false), 60); }
+}
 function popup(f) {
   const b = bucket(f.dur);
   return '<div class="pop"><h4><span class="bk ' + BK[b].c + '">' + fmtDur(f.dur) + '</span>' + (f.src === 'sec' ? 'مهمة ' + esc(f.id) : 'بلاغ يدوي #' + f.id) + '</h4>' +
@@ -62,27 +97,7 @@ function render() {
   if (!root) return;
   const all = openFaults({ all: scope === 'qassim' }).filter(f => scope === 'qassim' || f.center === 'بريدة');
   root.querySelectorAll('#opsScope button').forEach(b => b.setAttribute('aria-pressed', b.dataset.sc === scope));
-  /* الخريطة: البلاغ المعروف موقعه = نقطة، والباقي = فقاعة عدد فوق مدينة المركز */
-  layer.clearLayers();
-  const pts = [];
-  all.forEach(f => {
-    if (f.lat == null) return;
-    const b = bucket(f.dur);
-    const html = '<div class="pin ' + (f.src === 'manual' ? 'man' : BK[b].c) + (f.approx ? ' approx' : '') + '"></div>';
-    L.marker([f.lat, f.lng], { icon: L.divIcon({ className: '', html, iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: f.dur, riseOnHover: true })
-      .bindPopup(popup(f), { maxWidth: 280 }).addTo(layer);
-    pts.push([f.lat, f.lng]);
-  });
-  CENTERS.forEach(c => {
-    const un = all.filter(f => f.center === c && f.lat == null); if (!un.length) return;
-    const worst = Math.max(...un.map(f => bucket(f.dur))), ll = CENTER_LL[c];
-    const m = L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="bub" title="' + un.length + ' بلاغ في ' + c + ' بدون موقع محول"><b class="' + BK[worst].c + '">' + un.length + '</b><span>' + c + '</span></div>', iconSize: [0, 0] }), zIndexOffset: 2000 }).addTo(layer);
-    m.on('click', () => { filt = 'c:' + c; setMode('list'); render(); });
-    pts.push(ll);
-  });
-  if (all.some(f => f.center === 'بريدة')) pts.push([G.LA[0], G.LO[0]], [G.LA[1], G.LO[1]]);
-  bounds = pts.length ? L.latLngBounds(pts) : null;
-  if (!fitted && bounds) { fitted = true; setTimeout(() => fitAll(false), 60); }
+  lastAll = all; drawMap(true);
   const lg = root.querySelector('#opsLegend');
   lg.innerHTML = BK.map((b, i) => '<span><i style="background:' + BCOL[i] + '"></i>' + b.t + '<b>' + all.filter(f => bucket(f.dur) === i).length + '</b></span>').join('') +
     (all.some(f => f.src === 'manual') ? '<span><i style="background:#0B57D0;border-radius:3px"></i>بلاغ يدوي</span>' : '') +
