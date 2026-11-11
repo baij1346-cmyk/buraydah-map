@@ -21,10 +21,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal().h
 
 /* ---------- الخريطة ---------- */
 /* خرائط الأساس: فاتحة (افتراضي)، شوارع، قمر صناعي */
+/* كارتو صار يطلب مفتاح (يطلع «API KEY REQUIRED»)، فانتقلنا لخرائط Esri المجانية */
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
 const BASE = {
-  light: { t: 'فاتحة', url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attr: '&copy; OpenStreetMap &copy; CARTO' },
-  streets: { t: 'شوارع', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attr: '&copy; OpenStreetMap &copy; CARTO' },
-  sat: { t: 'قمر صناعي', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' }
+  light: { t: 'فاتحة', url: ESRI + 'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri', max: 16 },
+  streets: { t: 'شوارع', url: ESRI + 'World_Street_Map/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' },
+  sat: { t: 'قمر صناعي', url: ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' }
 };
 const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem('map-' + k); localStorage.setItem('map-' + k, v); } catch (e) { return null; } };
 const IC = {
@@ -37,12 +39,12 @@ const IC = {
 const btn = (k, title) => '<button type="button" data-k="' + k + '" title="' + title + '" aria-label="' + title + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + IC[k] + '</svg></button>';
 
 /* خريطة بأزرار مخصصة. opts.zones: إظهار حدود المناطق (يقدر المستخدم يخفيها) */
-export function makeMap(el, { zones = true, labels = true } = {}) {
+export function makeMap(el, { zones = true, labels = true, base: base0 } = {}) {
   const b = L.latLngBounds([G.LA[0], G.LO[0]], [G.LA[1], G.LO[1]]);
   const map = L.map(el, { zoomControl: false, zoomSnap: .25, maxZoom: 19, minZoom: 7, attributionControl: true }).fitBounds(b, { padding: [10, 10] });
   map.attributionControl.setPrefix(false);
-  let baseKey = BASE[pref('base')] ? pref('base') : 'light', base = null;
-  const setBase = k => { if (base) map.removeLayer(base); baseKey = k; base = L.tileLayer(BASE[k].url, { maxZoom: 19, subdomains: 'abcd', attribution: BASE[k].attr, detectRetina: true }).addTo(map); base.bringToBack(); pref('base', k); };
+  let baseKey = BASE[base0] ? base0 : BASE[pref('base')] ? pref('base') : 'light', base = null;
+  const setBase = k => { if (base) map.removeLayer(base); baseKey = k; base = L.tileLayer(BASE[k].url, { maxZoom: 19, maxNativeZoom: BASE[k].max || 19, attribution: BASE[k].attr }).addTo(map); base.bringToBack(); if (!base0) pref('base', k); };
   setBase(baseKey);
   /* المناطق: حدود متقطعة خفيفة + حرف صغير */
   const zl = L.layerGroup();
