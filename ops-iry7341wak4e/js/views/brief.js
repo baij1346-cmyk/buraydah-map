@@ -33,6 +33,9 @@ export function analyzeDay(d) {
   const F = faults({ from: t0 - 2 * DAY }).filter(f => f.src === 'sec' && seen.has(f.id));
   /* المدة: للمفتوح = عمره وقت آخر تقرير في اليوم (مو الحين) */
   F.forEach(f => { if (f.open || (f.end > t1 && !f.manual)) { f.open = true; f.dur = Math.round((t1 - f.start) / 60000); } });
+  /* كل مراكز القصيم (لجدول المقارنة) */
+  const FA = faults({ from: t0 - 2 * DAY, all: true }).filter(f => f.src === 'sec' && seen.has(f.id));
+  FA.forEach(f => { if (f.open || (f.end > t1 && !f.manual)) { f.open = true; f.dur = Math.round((t1 - f.start) / 60000); } });
   const centers = CENTERS.map(c => ({ c, r: row(c, F.filter(f => f.center === c)), over: F.filter(f => f.center === c && f.dur > 120).length })).filter(x => x.r.n);
   const all = row(S.settings.onlyBuraydah ? 'بريدة' : 'القصيم', F); all.over = F.filter(f => f.dur > 120).length;
   /* الذروة بالساعة */
@@ -48,7 +51,7 @@ export function analyzeDay(d) {
   const ids = new Set(F.map(f => f.id));
   const series = snaps.map(s => ({ at: s.at, n: s.rows.filter(r => ids.has(r.task)).length }));
   const inflow = F.filter(f => f.start >= t1 - HOUR).length, outflow = F.filter(f => !f.open && f.end >= t1 - HOUR && f.end <= t1).length;
-  return { d, snaps, t0, t1, F, centers, all, hours, peak, series, inflow, outflow };
+  return { d, snaps, t0, t1, F, FA, centers, all, hours, peak, series, inflow, outflow };
 }
 
 function render() {
@@ -76,6 +79,13 @@ function render() {
   h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>مؤشرات الأداء مقابل الأهداف <small>' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small></h3><div class="kpis-x">' + SC.map(k =>
     '<div class="kx ' + k.s + '"><span class="kx-t">' + k.t + '</span><b>' + (k.v == null ? '—' : k.unit === 'د' ? fmtDur(k.v) : k.v + k.unit) + '</b><span class="kx-g">الهدف ' + (k.unit === 'د' ? '≤ ' + k.target + ' د' : (k.k === 'over180' ? k.target : k.target + k.unit)) + '</span><span class="rag ' + k.s + '"><i>' + ICON[k.s] + '</i>' + RAG_LABEL[k.s] + '</span></div>').join('') + '</div>' +
     '<div class="vol"><span><b>' + a.n + '</b> بلاغ' + (F.some(f => f.kind && f.kind !== 'بلاغ مشترك') ? ' (' + F.filter(f => f.kind === 'بلاغ مشترك').length + ' مشترك + ' + F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').length + ' تذكرة مجمّعة)' : '') + '</span><span><b>' + a.closed + '</b> أُغلق</span><span><b>' + a.open + '</b> مفتوح وقت آخر تقرير</span><span><b>' + a.over + '</b> تجاوز ساعتين</span></div></section>';
+  /* نسبة الإغلاق حسب المركز */
+  { const CC = ['بريدة', 'عنيزة', 'غرب القصيم', 'الرس'].map(c => { const L = A.FA.filter(f => f.center === c), cl = L.filter(f => !f.open), d = cl.map(f => f.dur);
+      const w = x => d.length ? pct(d.filter(v => v <= x).length, d.length) : null; return { c, n: L.length, w60: w(60), w120: w(120), w180: w(180), avg: d.length ? Math.round(d.reduce((a, b) => a + b, 0) / d.length) : null, o180: L.filter(f => f.dur > 180).length }; }).filter(x => x.n);
+    if (CC.length > 1) { const cell = (v, t) => '<td class="n"><b style="color:' + (v == null ? 'inherit' : v >= t ? '#4F7F5C' : v >= t - 10 ? '#A57A2E' : '#A9564A') + '">' + (v == null ? '—' : v + '%') + '</b></td>';
+      h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>نسبة الإغلاق حسب المركز</h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المركز</th><th class="n">البلاغات</th><th class="n">خلال ساعة</th><th class="n">خلال ساعتين</th><th class="n">خلال 3 ساعات</th><th class="n">المتوسط</th><th class="n">تجاوز 3 ساعات</th></tr></thead><tbody>' +
+        CC.map(x => '<tr><td><b>' + x.c + '</b></td><td class="n">' + x.n + '</td>' + cell(x.w60, T.w60) + cell(x.w120, T.w120) + cell(x.w180, T.w180) + '<td class="n">' + (x.avg == null ? '—' : fmtDur(x.avg)) + '</td><td class="n">' + x.o180 + '</td></tr>').join('') +
+        '</tbody></table></div><p class="hint">الأهداف: خلال ساعة ' + T.w60 + '%، خلال ساعتين ' + T.w120 + '%، خلال 3 ساعات ' + T.w180 + '%. نفس فترة الحدث ونفس طريقة الحساب لكل المراكز.</p></section>'; } }
   /* خريطة المناطق الأكثر تأثرًا */
   const AR = areas(FC); curCells = AR.cells;
   if (AR.cells.length) {
@@ -148,7 +158,7 @@ function render() {
   /* تحفظات قبل تطبيق الغرامات */
   { const hist = new Map(); A.snaps.forEach(sn => (sn.rows || []).forEach(r => { const c = company(r.tech); if (!c) return; const L = hist.get(r.task) || new Set(); L.add(c); hist.set(r.task, L); }));
     const moved = FC.filter(f => f.src === 'sec' && (hist.get(f.id) || new Set()).size > 1), edge = FC.filter(f => f.dur > 180 && f.dur <= 200 && f.co);
-    if (moved.length || edge.length) h += '<div class="rep-note"><b>قبل تطبيق أي غرامة:</b> ' + [moved.length ? moved.length + ' بلاغ انتقل بين أكثر من مقاول، ونُسب للمقاول الأخير' : '', edge.length ? edge.length + ' بلاغ تجاوز 3 ساعات بفارق لا يزيد عن 20 دقيقة، وهو ضمن هامش دقة الحساب' : ''].filter(Boolean).join('؛ و') + '. يُتحقق منها من النظام قبل اعتمادها.</div>'; }
+    if (moved.length || edge.length) h += '<div class="rep-note"><b>قبل تطبيق أي غرامة:</b> ' + [moved.length ? moved.length + ' بلاغ انتقل بين أكثر من مقاول، ونُسب للمقاول الأخير' : '', edge.length ? edge.length + ' بلاغ تجاوز 3 ساعات بفارق لا يزيد عن 20 دقيقة، وهو ضمن هامش دقة الحساب' : ''].filter(Boolean).join('؛ و') + '. تُراجع هذه البلاغات قبل اعتماد أي غرامة.</div>'; }
   const RC = recommendations(A, center, T, { noCause, located, level: S.event.level || 1, sugLv, B0, feeders: A.feeders })
     .filter(r => !A.ended || !/إعلان المستوى|نقل فرق إضافية|تصعيد فوري/.test(r.a || r.act || r.t || JSON.stringify(r)));
   if (RC.length) h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>التوصيات والإجراءات</h3><div class="tbl-wrap"><table class="dtable recs lim5"><thead><tr><th>الأولوية</th><th>الإجراء</th><th>المبرر</th></tr></thead><tbody>' +
@@ -160,7 +170,7 @@ function render() {
   if (open.length) h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>المفتوح وقت آخر تقرير — ' + center + ' <small>' + open.length + '</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المهمة</th><th>المحول</th><th>المقاول</th><th class="n">العمر</th><th>التصعيد</th></tr></thead><tbody>' +
     open.slice(0, 10).map(f => '<tr><td class="ltr">' + esc(f.id) + '</td><td class="ltr">' + esc(f.ref.tr || '') + '</td><td>' + esc(f.co || 'بدون فني') + '</td><td class="n" style="' + (f.dur >= 120 ? 'color:var(--bad);font-weight:700' : '') + '">' + fmtDur(f.dur) + '</td><td style="font-size:.78rem">' + escalation(f.dur).t + '</td></tr>').join('') + '</tbody></table></div></section>';
   h += '<div class="rep-full">' + hotspotsHtml(FC, center) + '</div>';
-  h += '<section class="rep-sec rep-method"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة». كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ الذي يختفي من التقرير التالي يُحتسب مُغلقًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (الدقة عادةً ± ' + (() => { const g = A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at).sort((x, y) => x - y); return g.length ? Math.round(g[g.length >> 1] / 120000) : 0; })() + ' د). البلاغات التي فُتحت وأُغلقت قبل أول تقرير لا تظهر. المقاول مستنتج من اسم الفني.' + (A.excl ? ' استُبعد من الأرقام ' + A.excl + ' بلاغ بقرار رئيس القسم (' + A.exclIds.join('، ') + ').' : '') + '</p></section>';
+  h += '<section class="rep-sec rep-method"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة». كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ الذي يختفي من التقرير التالي يُحتسب مُغلقًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (الدقة عادةً ± ' + (() => { const g = A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at).sort((x, y) => x - y); return g.length ? Math.round(g[g.length >> 1] / 120000) : 0; })() + ' د). البلاغات التي فُتحت وأُغلقت قبل أول تقرير لا تظهر. المقاول مستنتج من اسم الفني.' + (A.excl ? ' استُبعد من الأرقام ' + A.excl + ' بلاغ (' + A.exclIds.join('، ') + ') لوجود ملاحظات على صحة بياناته.' : '') + '</p></section>';
   box.innerHTML = h; box.classList.toggle('rep-compact', !full);
   drawAreas();
   const text = summary(A);

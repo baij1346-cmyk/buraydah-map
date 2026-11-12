@@ -484,3 +484,4 @@ details.card summary{cursor:pointer;font-weight:700}
 #brBody .hb-bar{background:#7C8C8E}
 .rep-note{margin:10px 0 4px;padding:10px 14px;border-radius:10px;background:#FBF3E4;border:1px solid #EAD9B8;color:#5B4A2B;font-size:.82rem;line-height:1.8}
 @media print{#brBody .card,#brBody .msgs,#brBody .kx,#brBody .tbl-wrap,#brBody .rep-note,#brBody .dtable thead th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+@media print{#brBody .tbl-wrap,#brBody .card{break-inside:avoid}#brBody .rep-h{break-after:avoid}}
