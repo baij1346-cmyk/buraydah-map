@@ -75,7 +75,7 @@ function render() {
   const SC = scorecard(F, T), ICON = { g: '✓', a: '!', r: '✕', n: '' };
   h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>مؤشرات الأداء مقابل الأهداف <small>' + (S.settings.onlyBuraydah ? 'بريدة' : 'القصيم') + '</small></h3><div class="kpis-x">' + SC.map(k =>
     '<div class="kx ' + k.s + '"><span class="kx-t">' + k.t + '</span><b>' + (k.v == null ? '—' : k.unit === 'د' ? fmtDur(k.v) : k.v + k.unit) + '</b><span class="kx-g">الهدف ' + (k.unit === 'د' ? '≤ ' + k.target + ' د' : (k.k === 'over180' ? k.target : k.target + k.unit)) + '</span><span class="rag ' + k.s + '"><i>' + ICON[k.s] + '</i>' + RAG_LABEL[k.s] + '</span></div>').join('') + '</div>' +
-    '<div class="vol"><span><b>' + a.n + '</b> بلاغ' + (F.some(f => f.kind && f.kind !== 'بلاغ مشترك') ? ' (' + F.filter(f => f.kind === 'بلاغ مشترك').length + ' مشترك + ' + F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').length + ' تذكرة مجمّعة)' : '') + '</span><span><b>' + a.closed + '</b> انحل</span><span><b>' + a.open + '</b> مفتوح وقت آخر تقرير</span><span><b>' + a.over + '</b> تجاوز ساعتين</span></div></section>';
+    '<div class="vol"><span><b>' + a.n + '</b> بلاغ' + (F.some(f => f.kind && f.kind !== 'بلاغ مشترك') ? ' (' + F.filter(f => f.kind === 'بلاغ مشترك').length + ' مشترك + ' + F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').length + ' تذكرة مجمّعة)' : '') + '</span><span><b>' + a.closed + '</b> أُغلق</span><span><b>' + a.open + '</b> مفتوح وقت آخر تقرير</span><span><b>' + a.over + '</b> تجاوز ساعتين</span></div></section>';
   /* خريطة المناطق الأكثر تأثرًا */
   const AR = areas(FC); curCells = AR.cells;
   if (AR.cells.length) {
@@ -97,7 +97,7 @@ function render() {
   const ok = A.centers.filter(x => x.r.closed);
   if (A.centers.length > 1) h += '<section class="rep-sec"><h3 class="rep-h"><span class="sn"></span>مقارنة المراكز <small>متوسط مدة الإغلاق مقابل الهدف ' + T.avg + ' د</small></h3><div class="card">' +
     hbar(ok.map(x => ({ label: x.c, v: x.r.avg, txt: fmtDur(x.r.avg), warn: x.r.avg > T.avg })).sort((x, y) => y.v - x.v), { target: T.avg, targetTxt: 'الهدف' }) + '</div>' +
-    '<div class="tbl-wrap"><table class="dtable"><thead><tr><th>المركز</th><th class="n">البلاغات</th><th class="n">انحل</th><th class="n">مفتوح</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">خلال 3 ساعات</th><th class="n">تجاوز ساعتين</th></tr></thead><tbody>' +
+    '<div class="tbl-wrap"><table class="dtable"><thead><tr><th>المركز</th><th class="n">البلاغات</th><th class="n">أُغلق</th><th class="n">مفتوح</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">خلال 3 ساعات</th><th class="n">تجاوز ساعتين</th></tr></thead><tbody>' +
     A.centers.map(x => '<tr><td><b>' + x.c + '</b></td><td class="n">' + x.r.n + '</td><td class="n">' + x.r.closed + '</td><td class="n">' + (x.r.open || '—') + '</td><td class="n">' + fmtDur(x.r.avg) + '</td><td class="n"><span class="rag sm ' + (x.r.within[0] >= T.w60 ? 'g' : x.r.within[0] >= T.w60 - 10 ? 'a' : 'r') + '">' + x.r.within[0] + '%</span></td><td class="n">' + x.r.within[3] + '%</td><td class="n">' + (x.over || '—') + '</td></tr>').join('') +
     '<tr class="tot"><td><b>الإجمالي</b></td><td class="n"><b>' + a.n + '</b></td><td class="n">' + a.closed + '</td><td class="n">' + a.open + '</td><td class="n">' + fmtDur(a.avg) + '</td><td class="n">' + a.within[0] + '%</td><td class="n">' + a.within[3] + '%</td><td class="n">' + a.over + '</td></tr></tbody></table></div></section>';
   /* الطلب بالساعة */
@@ -125,7 +125,7 @@ function render() {
     /* يوم بيوم */
     if (multi) {
       const byDay = [...groupBy(F, f => isoDay(f.start))].sort((x, y) => x[0] < y[0] ? -1 : 1);
-      h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>الحدث يوم بيوم</h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>اليوم</th><th class="n">البلاغات</th><th class="n">انحل</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">تجاوز ساعتين</th><th class="n">تجاوز 3 ساعات</th></tr></thead><tbody>' +
+      h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>الحدث يوم بيوم</h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>اليوم</th><th class="n">البلاغات</th><th class="n">أُغلق</th><th class="n">المتوسط</th><th class="n">خلال ساعة</th><th class="n">تجاوز ساعتين</th><th class="n">تجاوز 3 ساعات</th></tr></thead><tbody>' +
         byDay.map(([d, L]) => { const r = row(d, L); return '<tr><td><b class="ltr">' + d + '</b>' + (S.settings.rainDays[d] ? ' <span class="pill blue">مطر</span>' : '') + '</td><td class="n">' + r.n + '</td><td class="n">' + r.closed + '</td><td class="n">' + (r.closed ? fmtDur(r.avg) : '—') + '</td><td class="n">' + (r.closed ? r.within[0] + '%' : '—') + '</td><td class="n">' + (L.filter(f => f.dur > 120).length || '—') + '</td><td class="n">' + (L.filter(f => f.dur > 180).length || '—') + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
     }
     /* مقارنة مع الأيام العادية */
@@ -160,7 +160,7 @@ function render() {
   if (open.length) h += '<section class="rep-sec rep-full"><h3 class="rep-h"><span class="sn"></span>المفتوح وقت آخر تقرير — ' + center + ' <small>' + open.length + '</small></h3><div class="tbl-wrap"><table class="dtable"><thead><tr><th>المهمة</th><th>المحول</th><th>المقاول</th><th class="n">العمر</th><th>التصعيد</th></tr></thead><tbody>' +
     open.slice(0, 10).map(f => '<tr><td class="ltr">' + esc(f.id) + '</td><td class="ltr">' + esc(f.ref.tr || '') + '</td><td>' + esc(f.co || 'بدون فني') + '</td><td class="n" style="' + (f.dur >= 120 ? 'color:var(--bad);font-weight:700' : '') + '">' + fmtDur(f.dur) + '</td><td style="font-size:.78rem">' + escalation(f.dur).t + '</td></tr>').join('') + '</tbody></table></div></section>';
   h += '<div class="rep-full">' + hotspotsHtml(FC, center) + '</div>';
-  h += '<section class="rep-sec rep-method"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة» من إدارة كهرباء القصيم. كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ الذي يختفي من التقرير التالي يُحتسب مُغلقًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (الدقة عادةً ± ' + (() => { const g = A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at).sort((x, y) => x - y); return g.length ? Math.round(g[g.length >> 1] / 120000) : 0; })() + ' د). البلاغات التي فُتحت وأُغلقت قبل أول تقرير لا تظهر. المقاول مستنتج من اسم الفني. الأهداف قابلة للتعديل من الإعدادات.' + (A.excl ? ' استُبعد من الأرقام ' + A.excl + ' بلاغ بقرار رئيس القسم (' + A.exclIds.join('، ') + ').' : '') + '</p></section>';
+  h += '<section class="rep-sec rep-method"><h3 class="rep-h"><span>i</span>المنهجية وحدود البيانات</h3><p class="hint">المصدر: تقارير «توجيه بلاغات المشتركين المسجلة». كل تقرير يعرض البلاغات المفتوحة وقت صدوره؛ البلاغ الذي يختفي من التقرير التالي يُحتسب مُغلقًا، ووقت إغلاقه = منتصف الفترة بين التقريرين (الدقة عادةً ± ' + (() => { const g = A.snaps.slice(1).map((s, i) => s.at - A.snaps[i].at).sort((x, y) => x - y); return g.length ? Math.round(g[g.length >> 1] / 120000) : 0; })() + ' د). البلاغات التي فُتحت وأُغلقت قبل أول تقرير لا تظهر. المقاول مستنتج من اسم الفني.' + (A.excl ? ' استُبعد من الأرقام ' + A.excl + ' بلاغ بقرار رئيس القسم (' + A.exclIds.join('، ') + ').' : '') + '</p></section>';
   box.innerHTML = h; box.classList.toggle('rep-compact', !full);
   drawAreas();
   const text = summary(A);
@@ -181,7 +181,7 @@ export function hotspotsHtml(FC, label) {
   const accs = [...groupBy(FC.filter(f => f.acc), f => f.acc)].filter(([, L]) => L.length >= 2).sort((x, y) => y[1].length - x[1].length);
   if (!trs.length && !accs.length) return '';
   return '<p class="sec-title">النقاط الساخنة' + (label ? ' — ' + label : '') + '</p><div class="card"><ul class="insights">' +
-    accs.slice(0, 5).map(([, L]) => '<li class="r">حساب واحد بلّغ <b>' + L.length + ' مرات</b> على محول <span class="ltr">' + esc(L[0].ref.tr || '') + '</span>' + (L.some(f => f.open) ? ' — <b>وللحين مفتوح</b>: العطل ما انحل من جذوره' : '') + '</li>').join('') +
+    accs.slice(0, 5).map(([, L]) => '<li class="r">حساب واحد بلّغ <b>' + L.length + ' مرات</b> على محول <span class="ltr">' + esc(L[0].ref.tr || '') + '</span>' + (L.some(f => f.open) ? ' — <b>وما زال مفتوحًا</b>: لم يُعالج العطل من جذوره' : '') + '</li>').join('') +
     trs.slice(0, 8).map(([k, L]) => '<li>محول <span class="ltr">' + esc(trLabel(k)) + '</span>' + (label ? '' : ' (' + L[0].center + ')') + ': <b>' + L.length + ' بلاغات</b> (' + [...new Set(L.map(f => f.co || 'بدون فني'))].join('، ') + ')' + (L.some(f => f.open) ? ' · يوجد مفتوح' : '') + '</li>').join('') + '</ul></div>';
 }
 export const latestDay = () => days()[0] || '';

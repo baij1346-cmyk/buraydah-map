@@ -52,7 +52,7 @@ export function keyMessages(A, focus, T) {
   out.push('أُغلق <b>' + pct(a.closed, a.n) + '%</b> من ' + a.n + ' بلاغ خلال ' + spanTxt(A) + '، بمتوسط <b>' + fmtDur(a.avg) + '</b>؛ ونسبة الإغلاق خلال ساعة <b>' + a.within[0] + '%</b> مقابل هدف ' + T.w60 + '%' + (w60.s === 'g' ? ' (محقق).' : '.'));
   const ok = A.centers.filter(x => x.r.closed >= 5).sort((x, y) => y.r.avg - x.r.avg);
   if (ok.length > 1) out.push('<b>' + ok[0].c + '</b> هو المركز الأبطأ (' + fmtDur(ok[0].r.avg) + ') مقابل ' + ok[ok.length - 1].c + ' (' + fmtDur(ok[ok.length - 1].r.avg) + ')' + (A.peak && A.peak.x >= 1.5 ? '، وتركّز الضغط بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b> بـ' + A.peak.x + '× المعدل.' : '.'));
-  else if (A.peak && A.peak.x >= 1.5) out.push('تركّز الضغط بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b>: بمعدل ' + A.peak.perHour + ' بلاغًا في الساعة، أي <b>' + A.peak.x + '×</b> باقي اليوم.');
+  else if (A.peak && A.peak.x >= 1.5) out.push('تركّز الضغط بين <b>' + A.peak.from + ':00 و' + A.peak.to + ':00</b>: بمعدل ' + A.peak.perHour + ' بلاغًا في الساعة، أي <b>' + A.peak.x + (A.d === 'all' ? '×</b> بقية فترة الحدث.' : '×</b> باقي اليوم.'));
   /* حدث تذاكر مجمّعة (فصل مغذي محتمل): أكثف تجمّع خلال ساعة */
   const mass = A.F.filter(f => f.kind && f.kind !== 'بلاغ مشترك').sort((x, y) => x.start - y.start);
   if (mass.length >= 10) {
@@ -60,7 +60,7 @@ export function keyMessages(A, focus, T) {
     for (let i = 0, j = 0; i < mass.length; i++) { while (mass[i].start - mass[j].start > 60 * 60000) j++; if (i - j + 1 > best[1] - best[0]) best = [j, i + 1]; }
     const C = mass.slice(best[0], best[1]), cc = C.filter(f => !f.open), sub = A.F.filter(f => f.kind === 'بلاغ مشترك' && !f.open);
     const avgOf = L => L.length ? Math.round(L.reduce((x, f) => x + f.dur, 0) / L.length) : 0;
-    if (C.length >= 10) out.push('<b>' + C.length + ' تذكرة مجمّعة</b> بين ' + fmtClock(C[0].start) + ' و' + fmtClock(C[C.length - 1].start) + ' على ' + new Set(C.map(f => f.tr)).size + ' محولًا (يرجّح فصل مغذٍ)، ومتوسط إغلاقها <b>' + fmtDur(avgOf(cc)) + '</b> مقابل ' + fmtDur(avgOf(sub)) + ' لبلاغات المشتركين' + (avgOf(cc) > avgOf(sub) ? '، وقد رفعت المتوسط العام' : '') + (mass.length > C.length ? ' (إجمالي المجمّعة اليوم ' + mass.length + ')' : '') + '.');
+    if (C.length >= 10) out.push('<b>' + C.length + ' تذكرة مجمّعة</b> بين ' + fmtClock(C[0].start) + ' و' + fmtClock(C[C.length - 1].start) + ' على ' + new Set(C.map(f => f.tr)).size + ' محولًا (يرجّح فصل مغذٍ)، ومتوسط إغلاقها <b>' + fmtDur(avgOf(cc)) + '</b> مقابل ' + fmtDur(avgOf(sub)) + ' لبلاغات المشتركين' + (avgOf(cc) > avgOf(sub) ? '، وقد رفعت المتوسط العام' : '') + (mass.length > C.length ? (A.d === 'all' ? ' (إجمالي المجمّعة خلال الحدث ' : ' (إجمالي المجمّعة اليوم ') + mass.length + ')' : '') + '.');
   }
   const exposed = A.F.filter(f => f.dur > 180).length, near = A.F.filter(f => f.open && f.dur >= 150 && f.dur <= 180).length;
   out.push(exposed ? '<b>' + exposed + ' بلاغ تجاوز 3 ساعات</b> (تعرّض نظامي)' + (near ? ' و' + near + (near > 2 && near < 11 ? ' بلاغات مفتوحة قريبة' : ' بلاغًا مفتوحًا قريبًا') + ' من الحد' : '') + '؛ ويتعين توثيق سبب التأخير لكل منها خلال 5 أيام عمل.'
@@ -80,13 +80,13 @@ export function recommendations(A, focus, T, extra = {}) {
   if (near.length) R.push({ p: 1, t: 'تصعيد فوري لـ' + near.length + ' بلاغ مفتوح تجاوز ساعتين', why: 'أقدمها ' + fmtDur(near[0].dur) + ' (' + (near[0].co || 'بدون فني') + ' · ' + near[0].center + ')', who: 'قائد الحدث + المشرف' });
   const board = contractorBoard(FC).filter(r => r.real && r.closed >= 5);
   const weak = board.filter(r => r.s === 'r').sort((x, y) => y.over120 - x.over120);
-  weak.slice(0, 2).forEach(r => R.push({ p: 1, t: 'اجتماع أداء مع ' + r.k + ' وتسجيل المخالفات', why: r.n + ' بلاغ، ' + r.within[0] + '% خلال ساعة، ' + r.over120 + ' تجاوز ساعتين (درجة ' + r.score + '/100)', who: 'رئيس القسم' }));
-  if (A.peak && A.peak.x >= 1.8) R.push({ p: 2, t: 'تعزيز الفرق بين ' + A.peak.from + ':00 و' + A.peak.to + ':00', why: 'البلاغات ' + A.peak.x + '× باقي اليوم (' + A.peak.perHour + ' بالساعة)', who: 'المقاولين' });
+  weak.slice(0, 2).forEach(r => R.push({ p: 1, t: 'اجتماع أداء مع ' + r.k + ' ومراجعة المخالفات المحتملة', why: r.n + ' بلاغ، ' + r.within[0] + '% خلال ساعة، ' + r.over120 + ' تجاوز ساعتين (درجة ' + r.score + '/100)', who: 'رئيس القسم' }));
+  if (A.peak && A.peak.x >= 1.8) R.push({ p: 2, t: 'تعزيز الفرق بين ' + A.peak.from + ':00 و' + A.peak.to + ':00', why: 'البلاغات ' + A.peak.x + (A.d === 'all' ? '× بقية فترة الحدث (' : '× باقي اليوم (') + A.peak.perHour + ' بالساعة)', who: 'المقاولين' });
   const accs = [...groupBy(FC.filter(f => f.acc), f => f.acc)].filter(([, L]) => L.length >= 3);
   accs.slice(0, 2).forEach(([, L]) => R.push({ p: 1, t: 'زيارة ميدانية وفحص جذري للمحول ' + (L[0].ref.tr || ''), why: 'المشترك نفسه بلّغ ' + L.length + ' مرات' + (L.some(f => f.open) ? ' وما زال مفتوحًا' : ''), who: 'المشرف + المقاول' }));
   const trs = [...groupBy(FC.filter(f => f.tr), f => f.tr)].filter(([, L]) => L.length >= 4).sort((x, y) => y[1].length - x[1].length);
   if (trs.length) R.push({ p: 2, t: 'إدراج ' + trs.length + ' محول في قائمة الفحص الوقائي', why: trs.slice(0, 3).map(([k, L]) => k + ' (' + L.length + ')').join('، '), who: 'التخطيط والصيانة' });
-  (extra.feeders || []).filter(g => g.L.length >= 5 && g.zones >= 2).slice(0, 2).forEach(g => R.push({ p: 1, t: 'فحص المغذي ' + g.k + ' (جهد متوسط)', why: g.L.length + ' بلاغ على ' + g.zones + ' منطقة و' + g.trs + ' محول' + (g.open ? '، منها ' + g.open + ' مفتوح' : ''), who: 'تحكم الجهد المتوسط' }));
+  (extra.feeders || []).filter(g => g.L.length >= 5 && g.zones >= 2).slice(0, 2).forEach(g => R.push({ p: 1, t: 'فحص المغذي ' + g.k + ' (جهد متوسط)', why: cnt(g.L.length, 'بلاغ', 'بلاغات') + ' في ' + cnt(g.zones, 'منطقة', 'مناطق') + ' على ' + cnt(g.trs, 'محول', 'محولات') + (g.open ? '، منها ' + g.open + ' مفتوح' : ''), who: 'تحكم الجهد المتوسط' }));
   const nt = F.filter(f => !f.open && !f.tech).length;
   if (nt >= Math.max(5, F.length * 0.1)) R.push({ p: 3, t: 'مراجعة ' + nt + ' بلاغًا أُغلق دون إسناد فني', why: 'التحقق من صحة الإغلاق وعدم تكرار البلاغ', who: 'منسق البلاغات' });
   if (extra.noCause) R.push({ p: 3, t: 'تسجيل سبب العطل لـ' + extra.noCause + ' بلاغ مقفل', why: 'لا يمكن تحديد نوع العمل (إحلال/تعزيز/صيانة) دونه', who: 'المشرفين' });
@@ -101,3 +101,6 @@ export function isEnded(A) {
   const pk = Math.max(...sr.map(x => x.n)), last = sr[sr.length - 1].n;
   return last <= .2 * pk && !A.F.some(f => f.open && f.dur >= 120);
 }
+
+/* العدد مع المعدود: 3–10 جمع، غيره مفرد */
+function cnt(n, one, many) { return n + ' ' + (n >= 3 && n <= 10 ? many : one); }
