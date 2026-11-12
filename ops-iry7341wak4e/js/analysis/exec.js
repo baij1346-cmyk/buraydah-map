@@ -45,7 +45,8 @@ export function keyMessages(A, focus, T) {
   /* حدث جاري: المفتوح يتصاعد */
   const sr = A.series || [];
   const pk = sr.length ? sr.reduce((m, x) => x.n > m.n ? x : m, sr[0]) : null, last = sr[sr.length - 1];
-  if (A.ended) out.push('<b>انتهى الحدث:</b> عاد المفتوح إلى <b>' + last.n + '</b> بلاغًا (' + fmtClock(last.at) + ') بعد ذروة بلغت <b>' + pk.n + '</b> (' + fmtClock(pk.at) + ')، دون أي بلاغ مفتوح تجاوز ساعتين.');
+  if (A.ended && !A.F.some(f => f.open)) out.push('<b>انتهى الحدث وأُغلقت جميع البلاغات</b> حتى آخر تقرير (' + fmtClock(last.at) + ')، بعد ذروة بلغت <b>' + pk.n + '</b> بلاغًا مفتوحًا (' + fmtClock(pk.at) + ').');
+  else if (A.ended) out.push('<b>انتهى الحدث:</b> عاد المفتوح إلى <b>' + last.n + '</b> بلاغًا (' + fmtClock(last.at) + ') بعد ذروة بلغت <b>' + pk.n + '</b> (' + fmtClock(pk.at) + ')، دون أي بلاغ مفتوح تجاوز ساعتين.');
   else if (sr.length >= 3 && pk !== last && last.n <= .6 * pk.n) out.push('<b>الحدث في تراجع:</b> انخفض المفتوح من ذروة <b>' + pk.n + '</b> (' + fmtClock(pk.at) + ') إلى <b>' + last.n + '</b> (' + fmtClock(last.at) + ')' + (A.inflow != null ? '، وخلال الساعة الأخيرة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' أُغلق' : '') + '.');
   else if (sr.length >= 3 && sr[sr.length - 1].n >= 1.5 * Math.max(1, sr[0].n)) out.push('<b>الحدث في تصاعد:</b> ارتفع المفتوح من <b>' + sr[0].n + '</b> (' + fmtClock(sr[0].at) + ') إلى <b>' + sr[sr.length - 1].n + '</b> (' + fmtClock(sr[sr.length - 1].at) + ')' + (A.inflow != null ? '، وخلال الساعة الأخيرة ورد ' + A.inflow + ' مقابل ' + A.outflow + ' أُغلق.' : '.'));
   const sc = scorecard(A.F, T), w60 = sc[0], w180 = sc[2];
@@ -98,6 +99,7 @@ export const PRIO = { 1: 'عالية', 2: 'متوسطة', 3: 'منخفضة' };
 /* الحدث انتهى: المفتوح رجع ≤ 20% من الذروة وما فيه مفتوح تجاوز ساعتين */
 export function isEnded(A) {
   const sr = A.series || []; if (sr.length < 6) return false;
+  if (!A.F.some(f => f.open)) return true;
   const pk = Math.max(...sr.map(x => x.n)), last = sr[sr.length - 1].n;
   return last <= .2 * pk && !A.F.some(f => f.open && f.dur >= 120);
 }

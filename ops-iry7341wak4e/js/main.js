@@ -142,6 +142,8 @@ async function loadSeeds() {
       const have = new Set(repo.S.snapshots.map(x => x.at)), fresh = d.reports.filter(r => !have.has(updatedAt(r.updated)));
       if (fresh.length) await repo.addSnapshots(fresh.map(r => Object.assign(r, { file: d.label })));
       (d.rainDays || []).forEach(x => { repo.S.settings.rainDays[x] = true; });
+      /* إقفال كل المفتوح بآخر تقرير في الحدث (بلاغ رئيس القسم: كل المهام أُغلقت) */
+      if (d.closeAt) await repo.patchTickets(t => { if (t.closed || t.mclosed || t.lastSeen > d.closeAt) return false; t.mclosed = t.lastSeen + 60000; return true; });
       if (Array.isArray(d.enrich) && d.enrich.length) await repo.addEnrich(d.enrich.filter(r => !repo.S.enrich[r.task]), d.label);
       done[file] = true; repo.S.settings.seeds = done; await repo.saveSettings();
       toast('تمت إضافة ' + d.label);
